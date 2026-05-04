@@ -4,3 +4,7 @@
 # dev screenshots from Playwright testing
 *.png
 !assets/**/*.png
+
+# private project notes / source assets
+分社线上活动.docx
+网站设计说明.md
