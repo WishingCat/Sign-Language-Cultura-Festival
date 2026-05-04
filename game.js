@@ -1,0 +1,505 @@
+/* =============================================================================
+   手语文化节 · 换装展 — Game logic
+   ============================================================================= */
+(() => {
+  "use strict";
+
+  /* ── Catalog ─────────────────────────────────────────────────────────────── */
+  // numbers map directly to the digit used in the character filename:
+  //   character file =  `${top??0}${bottom??0}${shoe??0}.png`
+  const CATALOG = {
+    top: [
+      { value: 1, src: "assets/signs/top-1.jpg" },
+      { value: 2, src: "assets/signs/top-2.jpg" },
+      { value: 3, src: "assets/signs/top-3.jpg" },
+      { value: 4, src: "assets/signs/top-4.jpg" },
+    ],
+    bottom: [
+      { value: 1, src: "assets/signs/bottom-1.jpg" },
+      { value: 2, src: "assets/signs/bottom-2.jpg" },
+      { value: 3, src: "assets/signs/bottom-3.jpg" },
+      { value: 4, src: "assets/signs/bottom-4.jpg" },
+    ],
+    // shoe digit "4" (靴子) intentionally absent — no rendered character images.
+    shoe: [
+      { value: 1, src: "assets/signs/shoe-1.jpg" },
+      { value: 2, src: "assets/signs/shoe-2.jpg" },
+      { value: 3, src: "assets/signs/shoe-3.jpg" },
+      { value: 5, src: "assets/signs/shoe-5.png" },
+    ],
+  };
+
+  const SLOT_LABEL = { top: "上衣", bottom: "下装", shoe: "鞋子" };
+  const SLOT_HINT  = { top: "TOPS", bottom: "BOTTOMS", shoe: "SHOES" };
+
+  /* ── State ───────────────────────────────────────────────────────────────── */
+  const state = {
+    top: null,
+    bottom: null,
+    shoe: null,
+  };
+
+  // The artist did not draw certain bottom + shoe combinations:
+  //   毛裤(2) + 运动鞋(5)   ← no athletic-shoes-with-thermal-pants
+  //   短裤(3) + 皮鞋(1)     ← no leather-shoes-with-shorts
+  //   裙子(4) + 皮鞋(1)     ← no leather-shoes-with-skirt
+  const INCOMPATIBLE_BOTTOM_SHOE = {
+    2: new Set([5]),
+    3: new Set([1]),
+    4: new Set([1]),
+  };
+  function isShoeCompatible(shoeValue) {
+    if (state.bottom == null) return true;
+    const blocked = INCOMPATIBLE_BOTTOM_SHOE[state.bottom];
+    return !blocked || !blocked.has(shoeValue);
+  }
+
+  /* ── DOM refs ────────────────────────────────────────────────────────────── */
+  const $character = document.getElementById("character");
+  const $resetBtn = document.getElementById("resetBtn");
+  const $stamp = document.getElementById("sparkleBurst");
+  const $cover = document.getElementById("cover");
+  const $game = document.getElementById("game");
+  const $startBtn = document.getElementById("startBtn");
+  const $homeBtn = document.getElementById("homeBtn");
+  const $bloomBurst = document.getElementById("bloomBurst");
+  const railGrids = {
+    top: document.getElementById("rail-top"),
+    bottom: document.getElementById("rail-bottom"),
+    shoe: document.getElementById("rail-shoe"),
+  };
+  const railCategories = document.querySelectorAll(".rail__category");
+  const clearBtns = document.querySelectorAll(".rail__clear");
+  const headBtns = document.querySelectorAll(".rail__head-btn");
+
+  const SLOT_ORDER = ["top", "bottom", "shoe"];
+  // Track which single category is expanded. Default: top.
+  let expandedSlot = "top";
+
+  /* ── Render cards ────────────────────────────────────────────────────────── */
+  function renderRails() {
+    Object.entries(CATALOG).forEach(([slot, items]) => {
+      const grid = railGrids[slot];
+      grid.innerHTML = "";
+      items.forEach((item) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "card";
+        btn.setAttribute("aria-pressed", "false");
+        btn.dataset.slot = slot;
+        btn.dataset.value = String(item.value);
+        btn.innerHTML = `
+          <div class="card__img-wrap">
+            <img class="card__img" src="${item.src}" alt="${SLOT_LABEL[slot]}手语 № ${item.value}" loading="lazy" draggable="false">
+          </div>
+          <span class="card__num">${item.value.toString().padStart(2, "0")}</span>
+          <span class="card__hint">${SLOT_HINT[slot]}</span>
+        `;
+        btn.addEventListener("click", () => onCardClick(slot, item.value));
+        grid.appendChild(btn);
+      });
+    });
+  }
+
+  /* ── Selection ───────────────────────────────────────────────────────────── */
+  // The character art is layered: a non-zero shoe needs a non-zero bottom,
+  // a non-zero bottom needs a non-zero top. Categories activate sequentially.
+  function isSlotEnabled(slot) {
+    if (slot === "top") return true;
+    if (slot === "bottom") return state.top != null;
+    if (slot === "shoe") return state.bottom != null;
+    return false;
+  }
+
+  function onCardClick(slot, value) {
+    if (!isSlotEnabled(slot)) return;
+    if (slot === "shoe" && !isShoeCompatible(value)) return;
+    // toggle: clicking same selected card unselects (back to null)
+    state[slot] = state[slot] === value ? null : value;
+    // clearing a parent slot also clears any dependent child slots
+    if (slot === "top" && state.top == null) {
+      state.bottom = null;
+      state.shoe = null;
+    }
+    if (slot === "bottom" && state.bottom == null) {
+      state.shoe = null;
+    }
+    // changing bottom may invalidate current shoe selection
+    if (slot === "bottom" && state.shoe != null && !isShoeCompatible(state.shoe)) {
+      state.shoe = null;
+    }
+    syncCardStates();
+    syncCategorySelectedFlag();
+    syncExpandedState();
+    renderCharacter();
+  }
+
+  function clearSlot(slot) {
+    state[slot] = null;
+    if (slot === "top") { state.bottom = null; state.shoe = null; }
+    if (slot === "bottom") { state.shoe = null; }
+    syncCardStates();
+    syncCategorySelectedFlag();
+    // cleared → reopen that category
+    setExpanded(slot);
+    renderCharacter();
+  }
+
+  function setExpanded(slot) {
+    expandedSlot = slot;
+    syncExpandedState();
+  }
+
+  function syncExpandedState() {
+    // If expandedSlot is locked, fall back to the deepest unlocked slot
+    if (!isSlotEnabled(expandedSlot)) {
+      for (let i = SLOT_ORDER.length - 1; i >= 0; i--) {
+        if (isSlotEnabled(SLOT_ORDER[i])) { expandedSlot = SLOT_ORDER[i]; break; }
+      }
+    }
+    railCategories.forEach((cat) => {
+      const slot = cat.dataset.slot;
+      const isOpen = slot === expandedSlot && isSlotEnabled(slot);
+      cat.dataset.expanded = isOpen ? "true" : "false";
+      const btn = cat.querySelector(".rail__head-btn");
+      if (btn) btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+  }
+
+  function syncCardStates() {
+    document.querySelectorAll(".card").forEach((btn) => {
+      const { slot, value } = btn.dataset;
+      const v = Number(value);
+      const selected = state[slot] === v;
+      let enabled = isSlotEnabled(slot);
+      let incompatible = false;
+      if (slot === "shoe" && enabled && !isShoeCompatible(v)) {
+        enabled = false;
+        incompatible = true;
+      }
+      btn.setAttribute("aria-pressed", selected ? "true" : "false");
+      btn.toggleAttribute("disabled", !enabled);
+      btn.dataset.locked = enabled ? "false" : "true";
+      btn.dataset.incompatible = incompatible ? "true" : "false";
+    });
+  }
+
+  function syncCategorySelectedFlag() {
+    railCategories.forEach((cat) => {
+      const slot = cat.dataset.slot;
+      cat.dataset.hasSelection = state[slot] != null ? "true" : "false";
+      cat.dataset.locked = isSlotEnabled(slot) ? "false" : "true";
+    });
+  }
+
+  /* ── Character render ────────────────────────────────────────────────────── */
+  let lastSrc = $character.getAttribute("src");
+
+  function renderCharacter() {
+    const { top, bottom, shoe } = state;
+    const allUntouched = top == null && bottom == null && shoe == null;
+    const allSet = top != null && bottom != null && shoe != null;
+
+    let nextSrc;
+    if (allUntouched) {
+      nextSrc = "assets/characters/start.png";
+    } else {
+      const t = top ?? 0;
+      const b = bottom ?? 0;
+      const s = shoe ?? 0;
+      nextSrc = `assets/characters/${t}${b}${s}.png`;
+    }
+
+    if (nextSrc !== lastSrc) {
+      swapCharacter(nextSrc);
+      lastSrc = nextSrc;
+    }
+
+    toggleCompleteStamp(allSet);
+  }
+
+  function swapCharacter(nextSrc) {
+    $character.classList.remove("is-swapping-in");
+    $character.classList.add("is-swapping-out");
+    const ghost = new Image();
+    ghost.onload = ghost.onerror = () => {
+      $character.src = nextSrc;
+      $character.classList.remove("is-swapping-out");
+      // force reflow so animation re-triggers
+      // eslint-disable-next-line no-unused-expressions
+      $character.offsetWidth;
+      $character.classList.add("is-swapping-in");
+    };
+    ghost.src = nextSrc;
+  }
+
+  function toggleCompleteStamp(show) {
+    if (show) {
+      $stamp.classList.remove("is-visible");
+      // restart animation
+      // eslint-disable-next-line no-unused-expressions
+      $stamp.offsetWidth;
+      $stamp.classList.add("is-visible");
+    } else {
+      $stamp.classList.remove("is-visible");
+    }
+  }
+
+  /* ── Cover ↔ Game transitions ────────────────────────────────────────────── */
+  let isTransitioning = false;
+
+  function enterGame() {
+    if (isTransitioning) return;
+    isTransitioning = true;
+    if ($bloomBurst) {
+      $bloomBurst.classList.remove("is-bursting");
+      // force reflow so animation re-triggers
+      // eslint-disable-next-line no-unused-expressions
+      $bloomBurst.offsetWidth;
+      $bloomBurst.classList.add("is-bursting");
+    }
+    $cover.classList.add("is-leaving");
+    window.setTimeout(() => {
+      $cover.hidden = true;
+      $cover.classList.remove("is-leaving");
+      if ($bloomBurst) $bloomBurst.classList.remove("is-bursting");
+      $game.hidden = false;
+      $game.classList.remove("is-entering");
+      // eslint-disable-next-line no-unused-expressions
+      $game.offsetWidth;
+      $game.classList.add("is-entering");
+      window.setTimeout(() => {
+        $game.classList.remove("is-entering");
+        isTransitioning = false;
+      }, 800);
+    }, 520);
+  }
+
+  function returnToCover() {
+    if (isTransitioning) return;
+    isTransitioning = true;
+    $game.hidden = true;
+    $cover.hidden = false;
+    $cover.classList.remove("is-leaving");
+    // eslint-disable-next-line no-unused-expressions
+    $cover.offsetWidth;
+    isTransitioning = false;
+  }
+
+  /* ── Reset ───────────────────────────────────────────────────────────────── */
+  function reset() {
+    state.top = null;
+    state.bottom = null;
+    state.shoe = null;
+    syncCardStates();
+    syncCategorySelectedFlag();
+    setExpanded("top");
+    renderCharacter();
+  }
+
+  /* ── Preload character images (idle) ─────────────────────────────────────── */
+  function preloadCharacters() {
+    const paths = ["assets/characters/start.png", "assets/characters/000.png"];
+    const tops = [1, 2, 3, 4];
+    const bottoms = [1, 2, 3, 4];
+    const shoes = [1, 2, 3, 5];
+    for (const t of tops) {
+      paths.push(`assets/characters/${t}00.png`);
+      for (const b of bottoms) {
+        paths.push(`assets/characters/${t}${b}0.png`);
+        const blocked = INCOMPATIBLE_BOTTOM_SHOE[b] || new Set();
+        for (const s of shoes) {
+          if (blocked.has(s)) continue;
+          paths.push(`assets/characters/${t}${b}${s}.png`);
+        }
+      }
+    }
+
+    const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 600));
+    idle(() => {
+      paths.forEach((src) => {
+        const img = new Image();
+        img.src = src;
+      });
+    });
+  }
+
+  /* ── Mouse-following petal trail ─────────────────────────────────────────── */
+  function initPetalTrail() {
+    const canvas = document.getElementById("petalCanvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W = 0, H = 0;
+    const petals = [];
+    const MAX = 50;
+    const COLORS = [
+      ["#FF8FAB", "#E66589"], // bloom
+      ["#FFD23F", "#F0B41E"], // sun
+      ["#BFE39A", "#6FB43F"], // leaf
+      ["#FFC9D8", "#FF8FAB"], // pale bloom
+      ["#D7ECF8", "#8EC5E8"], // sky
+    ];
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width = W + "px";
+      canvas.style.height = H + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    let lastX = null, lastY = null, lastT = 0;
+    let lastSpawn = 0;
+    function spawn(x, y, vx, vy, opts) {
+      const palette = COLORS[(Math.random() * COLORS.length) | 0];
+      const o = opts || {};
+      petals.push({
+        x, y,
+        vx: vx * 0.18 + (Math.random() - 0.5) * 0.5,
+        vy: vy * 0.12 + (Math.random() * 0.18 + 0.05),
+        size: (o.sizeMin || 7) + Math.random() * (o.sizeRange || 7),
+        rot: Math.random() * Math.PI * 2,
+        spin: (Math.random() - 0.5) * 0.04,
+        sway: Math.random() * Math.PI * 2,
+        swayAmp: 0.5 + Math.random() * 0.6,
+        color: palette[0],
+        edge: palette[1],
+        life: 0,
+        ttl: o.ttl || (260 + Math.random() * 140),
+        kind: Math.random() < 0.55 ? "petal" : (Math.random() < 0.5 ? "leaf" : "round"),
+      });
+      while (petals.length > MAX) petals.shift();
+    }
+
+    function onMove(e) {
+      const x = e.clientX, y = e.clientY;
+      const t = performance.now();
+      if (t - lastSpawn < 90) {
+        lastX = x; lastY = y; lastT = t;
+        return;
+      }
+      const dx = lastX == null ? 0 : x - lastX;
+      const dy = lastY == null ? 0 : y - lastY;
+      const dt = Math.max(8, t - lastT);
+      const jitterX = (Math.random() - 0.5) * 10;
+      const jitterY = (Math.random() - 0.5) * 10;
+      spawn(x + jitterX, y + jitterY, dx / dt * 6, dy / dt * 6);
+      lastX = x; lastY = y; lastT = t; lastSpawn = t;
+    }
+
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerdown", (e) => {
+      const N = 9;
+      for (let i = 0; i < N; i++) {
+        const a = (Math.PI * 2 * i) / N + Math.random() * 0.3;
+        const r = 18 + Math.random() * 14;
+        const speed = 16 + Math.random() * 10;
+        spawn(
+          e.clientX + Math.cos(a) * r,
+          e.clientY + Math.sin(a) * r,
+          Math.cos(a) * speed,
+          Math.sin(a) * speed - 8,
+          { ttl: 380 + Math.random() * 160, sizeMin: 9, sizeRange: 8 }
+        );
+      }
+      // a couple of slow drifting sparkle dots
+      for (let i = 0; i < 4; i++) {
+        spawn(
+          e.clientX + (Math.random() - 0.5) * 30,
+          e.clientY + (Math.random() - 0.5) * 30,
+          0, -2 - Math.random() * 3,
+          { ttl: 320 + Math.random() * 120, sizeMin: 4, sizeRange: 3 }
+        );
+      }
+    });
+
+    function drawPetal(p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = (() => {
+        const f = p.life / p.ttl;
+        if (f < 0.15) return f / 0.15 * 0.9;        // gentle fade in
+        if (f > 0.7) return Math.max(0, (1 - f) / 0.3) * 0.9; // slow fade out
+        return 0.9;
+      })();
+      ctx.fillStyle = p.color;
+      ctx.strokeStyle = p.edge;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      if (p.kind === "petal") {
+        // sakura-style teardrop
+        const s = p.size;
+        ctx.moveTo(0, -s);
+        ctx.bezierCurveTo(s * 0.7, -s * 0.6, s * 0.7, s * 0.4, 0, s);
+        ctx.bezierCurveTo(-s * 0.7, s * 0.4, -s * 0.7, -s * 0.6, 0, -s);
+      } else if (p.kind === "leaf") {
+        const s = p.size;
+        ctx.moveTo(0, -s);
+        ctx.quadraticCurveTo(s, 0, 0, s);
+        ctx.quadraticCurveTo(-s, 0, 0, -s);
+      } else {
+        ctx.arc(0, 0, p.size * 0.55, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function tick() {
+      ctx.clearRect(0, 0, W, H);
+      for (let i = petals.length - 1; i >= 0; i--) {
+        const p = petals[i];
+        p.life++;
+        p.sway += 0.018;
+        p.vx += Math.sin(p.sway) * 0.012 * p.swayAmp;
+        p.vy += 0.008; // very gentle gravity
+        p.vx *= 0.992;
+        p.vy *= 0.996;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.spin;
+        if (p.life > p.ttl || p.y > H + 40) {
+          petals.splice(i, 1);
+          continue;
+        }
+        drawPetal(p);
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* ── Wire it up ──────────────────────────────────────────────────────────── */
+  function init() {
+    renderRails();
+    syncCategorySelectedFlag();
+    syncExpandedState();
+    $resetBtn.addEventListener("click", reset);
+    if ($startBtn) $startBtn.addEventListener("click", enterGame);
+    if ($homeBtn) $homeBtn.addEventListener("click", returnToCover);
+    clearBtns.forEach((btn) => {
+      btn.addEventListener("click", () => clearSlot(btn.dataset.clear));
+    });
+    headBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const slot = btn.dataset.toggle;
+        if (!isSlotEnabled(slot)) return;
+        setExpanded(slot);
+      });
+    });
+    preloadCharacters();
+    initPetalTrail();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();

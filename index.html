@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>春日手语园 · 换装小游戏 | 北京大学</title>
+  <meta name="description" content="手语换装小游戏——凭手语预判穿衣服">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="garden">
+
+  <canvas class="petal-canvas" id="petalCanvas" aria-hidden="true"></canvas>
+
+  <div class="sky" aria-hidden="true">
+    <div class="sun"></div>
+    <div class="cloud cloud--1"></div>
+    <div class="cloud cloud--2"></div>
+    <div class="cloud cloud--3"></div>
+  </div>
+
+  <div class="petals" aria-hidden="true">
+    <span class="petal petal--1"></span>
+    <span class="petal petal--2"></span>
+    <span class="petal petal--3"></span>
+    <span class="petal petal--4"></span>
+    <span class="petal petal--5"></span>
+    <span class="petal petal--6"></span>
+    <span class="petal petal--7"></span>
+    <span class="petal petal--8"></span>
+  </div>
+
+  <!-- ───── COVER (start screen) ───────────────────────────────────────── -->
+  <section class="cover" id="cover" aria-label="开始页">
+    <div class="cover__inner">
+
+      <div class="cover__badges" aria-hidden="true">
+        <span class="cover__badge cover__badge--leaf">春 · MMXXVI</span>
+        <span class="cover__badge cover__badge--bloom">北京大学 · 手语文化节</span>
+      </div>
+
+      <h1 class="cover__title">
+        <span class="cover__title-cn">春日手语园</span>
+        <span class="cover__title-en">A Spring Garden of Signs</span>
+      </h1>
+
+      <p class="cover__lede">
+        <span class="cover__lede-cn">用<em>眼</em>读手语，给手小语挑一身春装</span>
+        <span class="cover__lede-en">read with your eyes · dress with your guess</span>
+      </p>
+
+      <div class="cover__art" aria-hidden="true">
+        <div class="cover__wreath">
+          <span class="wreath-leaf wreath-leaf--1"></span>
+          <span class="wreath-leaf wreath-leaf--2"></span>
+          <span class="wreath-leaf wreath-leaf--3"></span>
+          <span class="wreath-leaf wreath-leaf--4"></span>
+          <span class="wreath-leaf wreath-leaf--5"></span>
+          <span class="wreath-leaf wreath-leaf--6"></span>
+          <span class="wreath-flower wreath-flower--1">✿</span>
+          <span class="wreath-flower wreath-flower--2">❀</span>
+          <span class="wreath-flower wreath-flower--3">✿</span>
+          <span class="wreath-flower wreath-flower--4">❀</span>
+        </div>
+        <div class="cover__portrait">
+          <img src="assets/characters/start.png" alt="手小语" draggable="false">
+        </div>
+        <span class="cover__sparkle cover__sparkle--1">✦</span>
+        <span class="cover__sparkle cover__sparkle--2">✿</span>
+        <span class="cover__sparkle cover__sparkle--3">✦</span>
+        <span class="cover__sparkle cover__sparkle--4">❀</span>
+      </div>
+
+      <ol class="cover__steps">
+        <li>
+          <span class="cover__step-num" data-step-color="bloom">1</span>
+          <span class="cover__step-text"><b>看</b>手语卡牌的动作</span>
+        </li>
+        <li>
+          <span class="cover__step-num" data-step-color="sun">2</span>
+          <span class="cover__step-text"><b>猜</b>它对应哪件衣服</span>
+        </li>
+        <li>
+          <span class="cover__step-num" data-step-color="sky">3</span>
+          <span class="cover__step-text">从头到脚<b>陈列</b>春装</span>
+        </li>
+      </ol>
+
+      <button class="cover__cta" id="startBtn" type="button">
+        <span class="cover__cta-text">开始游戏</span>
+        <span class="cover__cta-arrow" aria-hidden="true">→</span>
+        <span class="cover__cta-bloom" aria-hidden="true">✿</span>
+      </button>
+
+      <p class="cover__foot">
+        <span>以手为语 · 以眼代耳</span>
+        <span class="cover__foot-dot" aria-hidden="true">✿</span>
+        <span>释义保密 · 重在观察</span>
+      </p>
+
+    </div>
+
+    <span class="cover__bloom-burst" id="bloomBurst" aria-hidden="true"></span>
+  </section>
+
+  <!-- ───── GAME ───────────────────────────────────────────────────────── -->
+  <div class="game" id="game" hidden>
+
+    <header class="topbar">
+      <div class="topbar__left">
+        <button class="logo" type="button" id="homeBtn" title="回到封面">
+          <span class="logo__blob" aria-hidden="true"></span>
+          <span class="logo__char">春</span>
+        </button>
+        <div class="topbar__titles">
+          <h1 class="title">春日手语园</h1>
+          <p class="tagline">
+            <span class="tagline__cn">给手小语换一身春天 · 用手语猜他穿什么</span>
+            <span class="tagline__en">a dress-up garden · guess the sign</span>
+          </p>
+        </div>
+      </div>
+      <div class="topbar__right">
+        <span class="chip chip--leaf">春 · MMXXVI</span>
+        <span class="chip chip--bloom">北京大学 · 手语文化节</span>
+      </div>
+    </header>
+
+    <main class="garden__main">
+
+      <aside class="rail" aria-label="手语卡片">
+        <nav class="rail__category" data-slot="top" data-expanded="true">
+          <header class="rail__head">
+            <button class="rail__head-btn" type="button" data-toggle="top" aria-expanded="true">
+              <span class="rail__badge" data-badge="1">1</span>
+              <h2 class="rail__title">上衣 <span class="rail__en">tops</span></h2>
+              <span class="rail__chevron" aria-hidden="true">▾</span>
+            </button>
+            <button class="rail__clear" type="button" data-clear="top" title="清除选择">×</button>
+          </header>
+          <div class="rail__body">
+            <div class="rail__grid" id="rail-top"></div>
+          </div>
+        </nav>
+
+        <nav class="rail__category" data-slot="bottom" data-expanded="false">
+          <header class="rail__head">
+            <button class="rail__head-btn" type="button" data-toggle="bottom" aria-expanded="false">
+              <span class="rail__badge" data-badge="2">2</span>
+              <h2 class="rail__title">下装 <span class="rail__en">bottoms</span></h2>
+              <span class="rail__chevron" aria-hidden="true">▾</span>
+            </button>
+            <button class="rail__clear" type="button" data-clear="bottom" title="清除选择">×</button>
+          </header>
+          <div class="rail__body">
+            <div class="rail__grid" id="rail-bottom"></div>
+          </div>
+        </nav>
+
+        <nav class="rail__category" data-slot="shoe" data-expanded="false">
+          <header class="rail__head">
+            <button class="rail__head-btn" type="button" data-toggle="shoe" aria-expanded="false">
+              <span class="rail__badge" data-badge="3">3</span>
+              <h2 class="rail__title">鞋子 <span class="rail__en">shoes</span></h2>
+              <span class="rail__chevron" aria-hidden="true">▾</span>
+            </button>
+            <button class="rail__clear" type="button" data-clear="shoe" title="清除选择">×</button>
+          </header>
+          <div class="rail__body">
+            <div class="rail__grid" id="rail-shoe"></div>
+          </div>
+        </nav>
+      </aside>
+
+      <section class="stage-wrap" aria-label="角色展示">
+        <div class="stage">
+          <div class="stage__bubble" aria-hidden="true"></div>
+          <div class="stage__sunbeam" aria-hidden="true"></div>
+
+          <svg class="stage__grass" viewBox="0 0 600 80" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0,80 Q20,35 40,80 T80,80 T120,80 T160,80 T200,80 T240,80 T280,80 T320,80 T360,80 T400,80 T440,80 T480,80 T520,80 T560,80 T600,80 L600,80 L0,80 Z" fill="#85C64C"/>
+            <path d="M0,80 Q30,50 60,80 T120,80 T180,80 T240,80 T300,80 T360,80 T420,80 T480,80 T540,80 T600,80 L600,80 L0,80 Z" fill="#6FB43F" opacity=".85"/>
+          </svg>
+
+          <img id="character" class="character" src="assets/characters/start.png" alt="手小语的造型">
+
+          <div class="burst" id="sparkleBurst" aria-hidden="true">
+            <span class="burst__ring"></span>
+            <span class="burst__star burst__star--1">✿</span>
+            <span class="burst__star burst__star--2">✦</span>
+            <span class="burst__star burst__star--3">❀</span>
+            <span class="burst__star burst__star--4">✿</span>
+            <span class="burst__star burst__star--5">✦</span>
+            <span class="burst__label">全部就绪！</span>
+          </div>
+        </div>
+
+        <div class="tag">
+          <p class="tag__hint">点点左边的手语卡牌，为<span class="tag__name">「手小语」</span>挑一身春装。<br>
+            ——答案保密，请你用眼睛读手语 ✿</p>
+        </div>
+
+        <button class="reset-btn" type="button" id="resetBtn" title="重新来过">
+          <span class="reset-btn__icon" aria-hidden="true">↻</span>
+          <span class="reset-btn__text">换一身</span>
+        </button>
+      </section>
+
+    </main>
+
+    <footer class="footbar">
+      <span class="footbar__blob" aria-hidden="true"></span>
+      <span>北京大学 · 手语文化节 · 春日特辑 MMXXVI</span>
+      <span class="footbar__dot" aria-hidden="true">✿</span>
+      <span>以手为语 · 以眼代耳</span>
+    </footer>
+
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

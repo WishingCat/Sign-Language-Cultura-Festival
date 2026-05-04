@@ -1,0 +1,6 @@
+.DS_Store
+.playwright-mcp/
+
+# dev screenshots from Playwright testing
+*.png
+!assets/**/*.png
