@@ -295,6 +295,19 @@
     syncCategorySelectedFlag();
     setExpanded("top");
     renderCharacter();
+    const stage = $character && $character.closest(".stage");
+    if (stage) {
+      stage.classList.remove("is-flipping");
+      // eslint-disable-next-line no-unused-expressions
+      stage.offsetWidth;
+      stage.classList.add("is-flipping");
+      stage.addEventListener("animationend", function onEnd(e) {
+        if (e.animationName === "pageFlip") {
+          stage.classList.remove("is-flipping");
+          stage.removeEventListener("animationend", onEnd);
+        }
+      });
+    }
   }
 
   /* ── Preload character images (idle) ─────────────────────────────────────── */

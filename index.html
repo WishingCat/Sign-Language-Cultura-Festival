@@ -181,16 +181,16 @@
             <path d="M0,80 Q30,50 60,80 T120,80 T180,80 T240,80 T300,80 T360,80 T420,80 T480,80 T540,80 T600,80 L600,80 L0,80 Z" fill="#6FB43F" opacity=".85"/>
           </svg>
 
+          <div class="stage__shadow" aria-hidden="true"></div>
+
           <img id="character" class="character" src="assets/characters/start.png" alt="手小语的造型">
 
           <div class="burst" id="sparkleBurst" aria-hidden="true">
-            <span class="burst__ring"></span>
-            <span class="burst__star burst__star--1">✿</span>
-            <span class="burst__star burst__star--2">✦</span>
-            <span class="burst__star burst__star--3">❀</span>
-            <span class="burst__star burst__star--4">✿</span>
-            <span class="burst__star burst__star--5">✦</span>
-            <span class="burst__label">全部就绪！</span>
+            <span class="burst__stamp">春日陈列</span>
+            <span class="burst__petal burst__petal--1">✿</span>
+            <span class="burst__petal burst__petal--2">❀</span>
+            <span class="burst__petal burst__petal--3">✿</span>
+            <span class="burst__petal burst__petal--4">❀</span>
           </div>
         </div>
 
@@ -207,11 +207,25 @@
 
     </main>
 
+    <svg class="page-grass" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M0,60 Q60,18 120,52 T240,52 T360,52 T480,52 T600,52 T720,52 T840,52 T960,52 T1080,52 T1200,52 T1320,52 T1440,52 L1440,60 L0,60 Z" fill="var(--leaf-pale)" opacity=".85"/>
+      <path d="M0,60 Q80,28 160,56 T320,56 T480,56 T640,56 T800,56 T960,56 T1120,56 T1280,56 T1440,56 L1440,60 L0,60 Z" fill="var(--leaf)" opacity=".7"/>
+      <g class="page-grass__flowers" font-size="22" text-anchor="middle">
+        <text x="200"  y="42" fill="#FF8FAB">✿</text>
+        <text x="620"  y="38" fill="#FFD23F">❀</text>
+        <text x="1040" y="42" fill="#FF8FAB">✿</text>
+        <text x="1320" y="40" fill="#E66589">❀</text>
+      </g>
+    </svg>
+
     <footer class="footbar">
-      <span class="footbar__blob" aria-hidden="true"></span>
-      <span>北京大学 · 手语文化节 · 春日特辑 MMXXVI</span>
-      <span class="footbar__dot" aria-hidden="true">✿</span>
-      <span>以手为语 · 以眼代耳</span>
+      <span class="footbar__col footbar__col--left">以手为语 · 以眼代耳</span>
+      <span class="footbar__col footbar__col--mid">
+        <span class="footbar__dot" aria-hidden="true">✿</span>
+        春日特辑 · MMXXVI
+        <span class="footbar__dot" aria-hidden="true">✿</span>
+      </span>
+      <span class="footbar__col footbar__col--right">北京大学 · 手语文化节</span>
     </footer>
 
   </div>
