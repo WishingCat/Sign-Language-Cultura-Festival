@@ -8,3 +8,13 @@
 # private project notes / source assets
 分社线上活动.docx
 网站设计说明.md
+部署方案.md
+
+# server runtime data
+server/data/
+
+# wrangler / cloudflare local cache
+.wrangler/
+
+# personal archives
+归档*.zip

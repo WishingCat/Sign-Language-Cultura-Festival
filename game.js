@@ -63,6 +63,13 @@
   const $startBtn = document.getElementById("startBtn");
   const $homeBtn = document.getElementById("homeBtn");
   const $bloomBurst = document.getElementById("bloomBurst");
+  const $nickInput = document.getElementById("nickInput");
+  const $nickError = document.getElementById("nickError");
+  const $nickWrap = $nickInput && $nickInput.closest(".cover__name");
+  const $fellowsPanel = document.getElementById("fellowsPanel");
+  const $fellowsList = document.getElementById("fellowsList");
+  const $fellowsCount = document.getElementById("fellowsCount");
+  const $fellowsMore = document.getElementById("fellowsMore");
   const railGrids = {
     top: document.getElementById("rail-top"),
     bottom: document.getElementById("rail-bottom"),
@@ -216,6 +223,12 @@
     }
 
     toggleCompleteStamp(allSet);
+    if (allSet) {
+      submitOutfit(top, bottom, shoe);
+      loadFellows(top, bottom, shoe);
+    } else {
+      hideFellowsPanel();
+    }
   }
 
   function swapCharacter(nextSrc) {
@@ -250,6 +263,7 @@
 
   function enterGame() {
     if (isTransitioning) return;
+    if (!validateAndStoreNick()) return;
     isTransitioning = true;
     if ($bloomBurst) {
       $bloomBurst.classList.remove("is-bursting");
@@ -284,6 +298,189 @@
     // eslint-disable-next-line no-unused-expressions
     $cover.offsetWidth;
     isTransitioning = false;
+  }
+
+  /* ── Nickname ────────────────────────────────────────────────────────────── */
+  const NICK_KEY = "signNickname";
+  let nickname = "";
+
+  function loadNickname() {
+    try { nickname = (localStorage.getItem(NICK_KEY) || "").slice(0, 20); }
+    catch { nickname = ""; }
+    if ($nickInput && nickname) $nickInput.value = nickname;
+  }
+  function setNickError(msg) {
+    if (!$nickError) return;
+    $nickError.textContent = msg || "";
+    if (msg && $nickWrap) {
+      $nickWrap.classList.remove("is-shaking");
+      // eslint-disable-next-line no-unused-expressions
+      $nickWrap.offsetWidth;
+      $nickWrap.classList.add("is-shaking");
+    }
+  }
+  function sanitizeNickFront(raw) {
+    if (typeof raw !== "string") return "";
+    return raw.replace(/[ -<>&"'`]/g, "")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 20);
+  }
+  function validateAndStoreNick() {
+    if (!$nickInput) return true; // safety: if input missing, do not block
+    const cleaned = sanitizeNickFront($nickInput.value);
+    if (!cleaned) {
+      setNickError("请填一个 1–20 字的昵称 ✿");
+      $nickInput.focus();
+      return false;
+    }
+    setNickError("");
+    nickname = cleaned;
+    $nickInput.value = cleaned;
+    try { localStorage.setItem(NICK_KEY, cleaned); } catch {}
+    return true;
+  }
+
+  /* ── Fellows (same-outfit roster) ───────────────────────────────────────── */
+  const submittedCodes = new Set();
+  let fellowsExpanded = false;
+  let lastQueryCode = null;
+  let inflight = null;
+
+  function codeOf(t, b, s) { return `${t}${b}${s}`; }
+
+  async function submitOutfit(t, b, s) {
+    const code = codeOf(t, b, s);
+    if (submittedCodes.has(code)) return;
+    submittedCodes.add(code);
+    try {
+      await fetch("/api/outfits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nickname, t, b, s }),
+      });
+    } catch (e) {
+      // silently swallow — name list will still try to load
+      submittedCodes.delete(code);
+    }
+  }
+
+  async function loadFellows(t, b, s) {
+    if (!$fellowsPanel) return;
+    const code = codeOf(t, b, s);
+    lastQueryCode = code;
+    showFellowsLoading();
+    try {
+      const res = await fetch(`/api/outfits?t=${t}&b=${b}&s=${s}`);
+      if (!res.ok) throw new Error("http " + res.status);
+      const data = await res.json();
+      if (lastQueryCode !== code) return; // stale
+      renderFellows(data.list || [], code);
+    } catch (e) {
+      if (lastQueryCode === code) renderFellowsError(t, b, s);
+    }
+  }
+
+  function showFellowsPanel() {
+    if (!$fellowsPanel) return;
+    $fellowsPanel.hidden = false;
+  }
+  function hideFellowsPanel() {
+    if (!$fellowsPanel) return;
+    $fellowsPanel.hidden = true;
+    if ($fellowsList) $fellowsList.innerHTML = "";
+    if ($fellowsCount) $fellowsCount.textContent = "—";
+    if ($fellowsMore) $fellowsMore.hidden = true;
+    fellowsExpanded = false;
+  }
+  function showFellowsLoading() {
+    showFellowsPanel();
+    if (!$fellowsList) return;
+    $fellowsList.classList.add("is-loading");
+    $fellowsList.classList.remove("is-collapsed");
+    $fellowsList.innerHTML =
+      '<span class="fellows__skel"></span>'.repeat(6);
+    if ($fellowsCount) $fellowsCount.textContent = "...";
+    if ($fellowsMore) $fellowsMore.hidden = true;
+  }
+  function fmtTime(ts) {
+    const d = new Date(ts);
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${m}/${day} ${hh}:${mm}`;
+  }
+  function escapeText(s) {
+    return String(s).replace(/[<>&"']/g, c => ({
+      "<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&#39;"
+    })[c]);
+  }
+  function renderFellows(list, code) {
+    if (!$fellowsList) return;
+    $fellowsList.classList.remove("is-loading");
+    showFellowsPanel();
+    // Sort newest first; mark the (last) entry whose nick matches as "self"
+    const sorted = list.slice().sort((a, b) => b.ts - a.ts);
+    const others = sorted.length;
+    if ($fellowsCount) {
+      $fellowsCount.textContent = others <= 1
+        ? "仅你一人"
+        : `共 ${others} 人`;
+    }
+    if (sorted.length === 0) {
+      $fellowsList.innerHTML =
+        '<li class="fellows__empty">✿ 你是<strong>第一个</strong>穿这身的同学</li>';
+      if ($fellowsMore) $fellowsMore.hidden = true;
+      return;
+    }
+    let selfFlagged = false;
+    const html = sorted.map((e, i) => {
+      const isSelf = !selfFlagged && e.nick === nickname;
+      if (isSelf) selfFlagged = true;
+      const cls = "fellows__item" + (isSelf ? " fellows__item--self" : "");
+      const delay = (i * 35).toFixed(0);
+      return `<li class="${cls}" style="animation-delay:${delay}ms">
+        <span class="fellows__item-mark">${isSelf ? "✿你" : "✿"}</span>
+        <span class="fellows__item-nick">${escapeText(e.nick)}</span>
+        <span class="fellows__item-time">${fmtTime(e.ts)}</span>
+      </li>`;
+    }).join("");
+    $fellowsList.innerHTML = html;
+    if (sorted.length > 12) {
+      $fellowsList.classList.add("is-collapsed");
+      if ($fellowsMore) {
+        $fellowsMore.hidden = false;
+        $fellowsMore.classList.remove("is-open");
+        $fellowsMore.querySelector(".fellows__more-text").textContent =
+          `展开全部（+${sorted.length - 12}）`;
+      }
+      fellowsExpanded = false;
+    } else {
+      $fellowsList.classList.remove("is-collapsed");
+      if ($fellowsMore) $fellowsMore.hidden = true;
+    }
+  }
+  function toggleFellowsExpand() {
+    if (!$fellowsList || !$fellowsMore) return;
+    fellowsExpanded = !fellowsExpanded;
+    $fellowsList.classList.toggle("is-collapsed", !fellowsExpanded);
+    $fellowsMore.classList.toggle("is-open", fellowsExpanded);
+    const t = $fellowsMore.querySelector(".fellows__more-text");
+    if (t) t.textContent = fellowsExpanded ? "收起" : "展开全部";
+  }
+  function renderFellowsError(t, b, s) {
+    if (!$fellowsList) return;
+    $fellowsList.classList.remove("is-loading");
+    $fellowsList.innerHTML =
+      `<li class="fellows__error">
+         <span>✿ 名单暂时拿不到，先 enjoy 你的造型</span>
+         <button type="button" class="fellows__retry">重试</button>
+       </li>`;
+    if ($fellowsCount) $fellowsCount.textContent = "—";
+    if ($fellowsMore) $fellowsMore.hidden = true;
+    const btn = $fellowsList.querySelector(".fellows__retry");
+    if (btn) btn.addEventListener("click", () => loadFellows(t, b, s));
   }
 
   /* ── Reset ───────────────────────────────────────────────────────────────── */
@@ -508,6 +705,14 @@
     });
     preloadCharacters();
     initPetalTrail();
+    loadNickname();
+    if ($nickInput) {
+      $nickInput.addEventListener("input", () => setNickError(""));
+      $nickInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); enterGame(); }
+      });
+    }
+    if ($fellowsMore) $fellowsMore.addEventListener("click", toggleFellowsExpand);
   }
 
   if (document.readyState === "loading") {

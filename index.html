@@ -85,6 +85,14 @@
         </li>
       </ol>
 
+      <label class="cover__name" for="nickInput">
+        <span class="cover__name-label">写一个昵称</span>
+        <input class="cover__name-input" id="nickInput" type="text"
+               maxlength="20" autocomplete="off" spellcheck="false"
+               placeholder="你想被怎么称呼？">
+        <span class="cover__name-error" id="nickError" aria-live="polite"></span>
+      </label>
+
       <button class="cover__cta" id="startBtn" type="button">
         <span class="cover__cta-text">开始游戏</span>
         <span class="cover__cta-arrow" aria-hidden="true">→</span>
@@ -198,6 +206,20 @@
           <p class="tag__hint">点点左边的手语卡牌，为<span class="tag__name">「手小语」</span>挑一身春装。<br>
             ——答案保密，请你用眼睛读手语 ✿</p>
         </div>
+
+        <aside class="fellows" id="fellowsPanel" hidden aria-live="polite">
+          <header class="fellows__head">
+            <span class="fellows__title">和你一起选了这身的同学</span>
+            <span class="fellows__count" id="fellowsCount" aria-hidden="true">—</span>
+          </header>
+          <div class="fellows__body" id="fellowsBody">
+            <ul class="fellows__list" id="fellowsList"></ul>
+            <button class="fellows__more" type="button" id="fellowsMore" hidden>
+              <span class="fellows__more-text">展开全部</span>
+              <span class="fellows__more-icon" aria-hidden="true">▾</span>
+            </button>
+          </div>
+        </aside>
 
         <button class="reset-btn" type="button" id="resetBtn" title="重新来过">
           <span class="reset-btn__icon" aria-hidden="true">↻</span>
