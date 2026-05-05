@@ -1031,24 +1031,26 @@
     $wallHeroImg.offsetWidth;
     $wallHeroImg.classList.add("is-punched");
 
-    // Spawn a random love sticker drifting from the click point
+    // Spawn a random love sticker drifting outward in a radial direction
     const now = Date.now();
-    if (now - lovePunchAt < 80) return; // crude throttle so a fast click doesn't spam DOM
+    if (now - lovePunchAt < 120) return; // throttle so a fast click doesn't spam DOM
     lovePunchAt = now;
     const sticker = document.createElement("img");
     const src = LOVE_IMAGES[Math.floor(Math.random() * LOVE_IMAGES.length)];
     sticker.src = src;
     sticker.alt = "";
     sticker.className = "love-sticker";
-    // Anchor near the click point but biased outward in random directions
+    // Anchor at the click point and pick a random radial direction
     const cx = (e && typeof e.clientX === "number") ? e.clientX : window.innerWidth / 2;
     const cy = (e && typeof e.clientY === "number") ? e.clientY : window.innerHeight / 2;
-    const size = 110 + Math.random() * 110;        // 110–220 px
-    const drift = (Math.random() - 0.5) * 220;     // -110 to +110 px horizontal
-    const lift  = 180 + Math.random() * 220;       // 180–400 px upward
-    const rot   = (Math.random() - 0.5) * 90;      // ±45deg final rotation
-    sticker.style.setProperty("--lx", drift + "px");
-    sticker.style.setProperty("--ly", -lift + "px");
+    const size = 36 + Math.random() * 24;          // 36–60 px (small)
+    const distance = 90 + Math.random() * 80;      // 90–170 px outward radius
+    const angle = Math.random() * Math.PI * 2;     // any direction
+    const lx = Math.cos(angle) * distance;
+    const ly = Math.sin(angle) * distance;
+    const rot = (Math.random() - 0.5) * 50;        // ±25deg final rotation
+    sticker.style.setProperty("--lx", lx + "px");
+    sticker.style.setProperty("--ly", ly + "px");
     sticker.style.setProperty("--lr", rot + "deg");
     sticker.style.left = (cx - size / 2) + "px";
     sticker.style.top  = (cy - size / 2) + "px";

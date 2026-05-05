@@ -2897,13 +2897,12 @@ body::after {
   filter: drop-shadow(0 6px 14px rgba(255,143,171,.45));
 }
 .wall__hero-img.is-punched {
-  animation: heroPunch .55s var(--bounce);
+  animation: heroPunch .35s var(--soft);
 }
 @keyframes heroPunch {
   0%   { transform: scale(1)    rotate(0deg); }
-  20%  { transform: scale(.86)  rotate(-4deg); }
-  40%  { transform: scale(1.14) rotate(5deg); }
-  60%  { transform: scale(.96)  rotate(-2deg); }
+  35%  { transform: scale(.97)  rotate(-1deg); }
+  70%  { transform: scale(1.03) rotate(1deg); }
   100% { transform: scale(1)    rotate(0deg); }
 }
 
@@ -2913,25 +2912,25 @@ body::after {
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
-  filter: drop-shadow(0 8px 16px rgba(230,101,137,.35));
-  animation: loveDrift 1.4s var(--soft) forwards;
+  filter: drop-shadow(0 4px 8px rgba(230,101,137,.28));
+  animation: loveDrift 2.6s ease-out forwards;
   will-change: transform, opacity;
 }
 @keyframes loveDrift {
   0% {
     opacity: 0;
-    transform: translate(0, 0) rotate(0deg) scale(.45);
+    transform: translate(0, 0) rotate(0deg) scale(.35);
   }
   18% {
-    opacity: 1;
-    transform: translate(0, -16px) rotate(8deg) scale(1.18);
+    opacity: .95;
+    transform: translate(calc(var(--lx) * .12), calc(var(--ly) * .12)) rotate(calc(var(--lr) * .15)) scale(.85);
   }
-  40% {
-    opacity: 1;
-    transform: translate(calc(var(--lx) * .35), calc(var(--ly) * .35)) rotate(calc(var(--lr) * .4)) scale(1.05);
+  60% {
+    opacity: .85;
+    transform: translate(calc(var(--lx) * .55), calc(var(--ly) * .55)) rotate(calc(var(--lr) * .55)) scale(.95);
   }
   100% {
     opacity: 0;
-    transform: translate(var(--lx, 0), var(--ly, -240px)) rotate(var(--lr, 0deg)) scale(.92);
+    transform: translate(var(--lx, 0), var(--ly, 0)) rotate(var(--lr, 0deg)) scale(1);
   }
 }
