@@ -70,21 +70,6 @@
         <span class="cover__sparkle cover__sparkle--4">❀</span>
       </div>
 
-      <ol class="cover__steps">
-        <li>
-          <span class="cover__step-num" data-step-color="bloom">1</span>
-          <span class="cover__step-text"><b>看</b>手语卡牌的动作</span>
-        </li>
-        <li>
-          <span class="cover__step-num" data-step-color="sun">2</span>
-          <span class="cover__step-text"><b>猜</b>它对应哪件衣服</span>
-        </li>
-        <li>
-          <span class="cover__step-num" data-step-color="sky">3</span>
-          <span class="cover__step-text">从头到脚<b>陈列</b>春装</span>
-        </li>
-      </ol>
-
       <label class="cover__name" for="nickInput">
         <span class="cover__name-label">写一个昵称</span>
         <input class="cover__name-input" id="nickInput" type="text"
@@ -92,6 +77,43 @@
                placeholder="你想被怎么称呼？">
         <span class="cover__name-error" id="nickError" aria-live="polite"></span>
       </label>
+
+      <fieldset class="cover__mbti" id="mbtiFieldset">
+        <legend class="cover__mbti-legend">挑一个 MBTI（可选）</legend>
+        <div class="cover__mbti-row" data-axis="ie">
+          <span class="cover__mbti-axis">外向 / 内向</span>
+          <div class="seg" role="radiogroup" aria-label="ie">
+            <button type="button" class="seg__btn" data-axis="ie" data-value="E">E 外向</button>
+            <button type="button" class="seg__btn" data-axis="ie" data-value="I">I 内向</button>
+            <button type="button" class="seg__btn seg__btn--unknown is-on" data-axis="ie" data-value="X">未知</button>
+          </div>
+        </div>
+        <div class="cover__mbti-row" data-axis="ns">
+          <span class="cover__mbti-axis">实感 / 直觉</span>
+          <div class="seg" role="radiogroup" aria-label="ns">
+            <button type="button" class="seg__btn" data-axis="ns" data-value="S">S 实感</button>
+            <button type="button" class="seg__btn" data-axis="ns" data-value="N">N 直觉</button>
+            <button type="button" class="seg__btn seg__btn--unknown is-on" data-axis="ns" data-value="X">未知</button>
+          </div>
+        </div>
+        <div class="cover__mbti-row" data-axis="ft">
+          <span class="cover__mbti-axis">思考 / 情感</span>
+          <div class="seg" role="radiogroup" aria-label="ft">
+            <button type="button" class="seg__btn" data-axis="ft" data-value="T">T 思考</button>
+            <button type="button" class="seg__btn" data-axis="ft" data-value="F">F 情感</button>
+            <button type="button" class="seg__btn seg__btn--unknown is-on" data-axis="ft" data-value="X">未知</button>
+          </div>
+        </div>
+        <div class="cover__mbti-row" data-axis="pj">
+          <span class="cover__mbti-axis">判断 / 感知</span>
+          <div class="seg" role="radiogroup" aria-label="pj">
+            <button type="button" class="seg__btn" data-axis="pj" data-value="J">J 判断</button>
+            <button type="button" class="seg__btn" data-axis="pj" data-value="P">P 感知</button>
+            <button type="button" class="seg__btn seg__btn--unknown is-on" data-axis="pj" data-value="X">未知</button>
+          </div>
+        </div>
+        <output class="cover__mbti-out" id="mbtiOut" aria-live="polite">XXXX</output>
+      </fieldset>
 
       <button class="cover__cta" id="startBtn" type="button">
         <span class="cover__cta-text">开始游戏</span>
@@ -206,6 +228,13 @@
           <p class="tag__hint">点点左边的手语卡牌，为<span class="tag__name">「手小语」</span>挑一身春装。<br>
             ——答案保密，请你用眼睛读手语 ✿</p>
         </div>
+
+        <button class="stroll-btn" type="button" id="strollBtn" hidden>
+          <span class="stroll-btn__petal stroll-btn__petal--l" aria-hidden="true">✿</span>
+          <span class="stroll-btn__text">和手小语一起逛文化节</span>
+          <span class="stroll-btn__arrow" aria-hidden="true">→</span>
+          <span class="stroll-btn__petal stroll-btn__petal--r" aria-hidden="true">❀</span>
+        </button>
 
         <aside class="fellows" id="fellowsPanel" hidden aria-live="polite">
           <header class="fellows__head">

@@ -70,6 +70,9 @@
   const $fellowsList = document.getElementById("fellowsList");
   const $fellowsCount = document.getElementById("fellowsCount");
   const $fellowsMore = document.getElementById("fellowsMore");
+  const $strollBtn = document.getElementById("strollBtn");
+  const $mbtiFieldset = document.getElementById("mbtiFieldset");
+  const $mbtiOut = document.getElementById("mbtiOut");
   const railGrids = {
     top: document.getElementById("rail-top"),
     bottom: document.getElementById("rail-bottom"),
@@ -222,11 +225,14 @@
       lastSrc = nextSrc;
     }
 
-    toggleCompleteStamp(allSet);
     if (allSet) {
-      submitOutfit(top, bottom, shoe);
-      loadFellows(top, bottom, shoe);
+      // Show the stroll CTA, but defer stamp + submit + roster until user clicks it.
+      toggleCompleteStamp(false);
+      showStrollBtn(top, bottom, shoe);
+      hideFellowsPanel();
     } else {
+      toggleCompleteStamp(false);
+      hideStrollBtn();
       hideFellowsPanel();
     }
   }
@@ -341,6 +347,48 @@
     return true;
   }
 
+  /* ── MBTI ────────────────────────────────────────────────────────────────── */
+  const MBTI_KEY = "signMbti";
+  const MBTI_VALID = [
+    new Set(["I", "E", "X"]),
+    new Set(["N", "S", "X"]),
+    new Set(["F", "T", "X"]),
+    new Set(["P", "J", "X"]),
+  ];
+  const AXIS_ORDER = ["ie", "ns", "ft", "pj"];
+  const AXIS_INDEX = { ie: 0, ns: 1, ft: 2, pj: 3 };
+  let mbti = "XXXX";
+
+  function setMbtiChar(axisKey, ch) {
+    const i = AXIS_INDEX[axisKey];
+    if (i == null) return;
+    if (!MBTI_VALID[i].has(ch)) ch = "X";
+    mbti = mbti.slice(0, i) + ch + mbti.slice(i + 1);
+    try { localStorage.setItem(MBTI_KEY, mbti); } catch {}
+    syncMbtiUI();
+  }
+  function syncMbtiUI() {
+    if (!$mbtiFieldset) return;
+    AXIS_ORDER.forEach((axis, i) => {
+      const ch = mbti[i];
+      $mbtiFieldset.querySelectorAll(`.seg__btn[data-axis="${axis}"]`).forEach(btn => {
+        btn.classList.toggle("is-on", btn.dataset.value === ch);
+      });
+    });
+    if ($mbtiOut) $mbtiOut.textContent = mbti;
+  }
+  function loadMbti() {
+    try {
+      const raw = (localStorage.getItem(MBTI_KEY) || "XXXX").toUpperCase();
+      mbti = "";
+      for (let i = 0; i < 4; i++) {
+        const ch = raw[i];
+        mbti += ch && MBTI_VALID[i].has(ch) ? ch : "X";
+      }
+    } catch { mbti = "XXXX"; }
+    syncMbtiUI();
+  }
+
   /* ── Fellows (same-outfit roster) ───────────────────────────────────────── */
   const submittedCodes = new Set();
   let fellowsExpanded = false;
@@ -357,7 +405,7 @@
       await fetch("/api/outfits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nickname, t, b, s }),
+        body: JSON.stringify({ nickname, t, b, s, mbti }),
       });
     } catch (e) {
       // silently swallow — name list will still try to load
@@ -442,7 +490,11 @@
       const delay = (i * 35).toFixed(0);
       return `<li class="${cls}" style="animation-delay:${delay}ms">
         <span class="fellows__item-mark">${isSelf ? "✿你" : "✿"}</span>
-        <span class="fellows__item-nick">${escapeText(e.nick)}</span>
+        <span class="fellows__item-nick">${escapeText(e.nick)}</span>${
+          e.mbti && e.mbti !== "XXXX"
+            ? `<span class="fellows__item-mbti">${escapeText(e.mbti)}</span>`
+            : ""
+        }
         <span class="fellows__item-time">${fmtTime(e.ts)}</span>
       </li>`;
     }).join("");
@@ -481,6 +533,43 @@
     if ($fellowsMore) $fellowsMore.hidden = true;
     const btn = $fellowsList.querySelector(".fellows__retry");
     if (btn) btn.addEventListener("click", () => loadFellows(t, b, s));
+  }
+
+  /* ── Stroll CTA (gates the reveal) ───────────────────────────────────────── */
+  let strollOutfit = null;       // {t,b,s} the button currently represents
+  let strollBusy = false;
+  function showStrollBtn(t, b, s) {
+    if (!$strollBtn) return;
+    strollOutfit = { t, b, s };
+    if ($strollBtn.hidden) {
+      $strollBtn.hidden = false;
+      // restart entrance animation each time it appears
+      $strollBtn.style.animation = "none";
+      // eslint-disable-next-line no-unused-expressions
+      $strollBtn.offsetWidth;
+      $strollBtn.style.animation = "";
+    }
+    $strollBtn.disabled = false;
+  }
+  function hideStrollBtn() {
+    if (!$strollBtn) return;
+    strollOutfit = null;
+    $strollBtn.hidden = true;
+    $strollBtn.disabled = false;
+  }
+  async function onStrollClick() {
+    if (strollBusy || !strollOutfit) return;
+    const { t, b, s } = strollOutfit;
+    strollBusy = true;
+    if ($strollBtn) $strollBtn.disabled = true;
+    // Step 1: stamp + petal burst
+    toggleCompleteStamp(true);
+    // Step 2: hide the button (after the stamp animation kicks in)
+    window.setTimeout(() => { hideStrollBtn(); }, 450);
+    // Step 3: submit + load roster (fellows panel renders skeleton then list)
+    submitOutfit(t, b, s);
+    await loadFellows(t, b, s);
+    strollBusy = false;
   }
 
   /* ── Reset ───────────────────────────────────────────────────────────────── */
@@ -713,6 +802,18 @@
       });
     }
     if ($fellowsMore) $fellowsMore.addEventListener("click", toggleFellowsExpand);
+    if ($strollBtn) $strollBtn.addEventListener("click", onStrollClick);
+    loadMbti();
+    if ($mbtiFieldset) {
+      $mbtiFieldset.addEventListener("click", (e) => {
+        const btn = e.target.closest(".seg__btn");
+        if (!btn) return;
+        const axis = btn.dataset.axis;
+        const value = btn.dataset.value;
+        if (!axis || !value) return;
+        setMbtiChar(axis, value);
+      });
+    }
   }
 
   if (document.readyState === "loading") {
