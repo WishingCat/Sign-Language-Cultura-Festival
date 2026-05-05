@@ -560,6 +560,15 @@
       "<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;","'":"&#39;"
     })[c]);
   }
+  function mbtiGroup(m) {
+    if (!m || m.length !== 4) return "unknown";
+    const ns = m[1], ft = m[2];
+    if (ns === "N" && ft === "T") return "nt";   // 分析家 · 紫
+    if (ns === "N" && ft === "F") return "nf";   // 外交官 · 绿
+    if (ns === "S" && (m[3] === "J")) return "sj"; // 守护者 · 蓝
+    if (ns === "S" && (m[3] === "P")) return "sp"; // 探险家 · 黄
+    return "unknown";
+  }
   function renderFellows(list, code) {
     if (!$fellowsList) return;
     $fellowsList.classList.remove("is-loading");
@@ -597,7 +606,7 @@
           }
         </span>${
           e.mbti && e.mbti !== "XXXX"
-            ? `<span class="fellows__item-mbti">${escapeText(e.mbti)}</span>`
+            ? `<span class="fellows__item-mbti" data-mbti-group="${mbtiGroup(e.mbti)}">${escapeText(e.mbti)}</span>`
             : ""
         }
         <span class="fellows__item-time">${fmtTime(e.ts)}</span>
@@ -950,7 +959,10 @@
     $dressingId.hidden = false;
     if ($dressingNick) $dressingNick.textContent = nickname;
     if ($dressingSeq)  $dressingSeq.textContent  = userDisplayUid || "";
-    if ($dressingMbti) $dressingMbti.textContent = (mbti && mbti !== "XXXX") ? mbti : "";
+    if ($dressingMbti) {
+      $dressingMbti.textContent = (mbti && mbti !== "XXXX") ? mbti : "";
+      $dressingMbti.dataset.mbtiGroup = mbtiGroup(mbti);
+    }
   }
 
   /* ── Wall enter ───────────────────────────────────────────────────────────── */
@@ -1001,7 +1013,10 @@
     if ($wallHeroImg) $wallHeroImg.src = `assets/characters/${t}${b}${s}.png`;
     if ($wallHeroNick) $wallHeroNick.textContent = nickname || "—";
     if ($wallHeroSeq)  $wallHeroSeq.textContent  = userDisplayUid || "";
-    if ($wallHeroMbti) $wallHeroMbti.textContent = (mbti && mbti !== "XXXX") ? mbti : "";
+    if ($wallHeroMbti) {
+      $wallHeroMbti.textContent = (mbti && mbti !== "XXXX") ? mbti : "";
+      $wallHeroMbti.dataset.mbtiGroup = mbtiGroup(mbti);
+    }
   }
 
   async function loadOthersStrip() {
@@ -1043,7 +1058,7 @@
         </figure>
         <span class="wall__other__nick">${escapeText(e.nick)}</span><span class="wall__other__seq">${escapeText(seq)}</span>${
           e.mbti && e.mbti !== "XXXX"
-            ? `<span class="wall__other__mbti">${escapeText(e.mbti)}</span>`
+            ? `<span class="wall__other__mbti" data-mbti-group="${mbtiGroup(e.mbti)}">${escapeText(e.mbti)}</span>`
             : ""
         }
       </li>`;

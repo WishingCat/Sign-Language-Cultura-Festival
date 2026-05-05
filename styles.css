@@ -2765,3 +2765,42 @@ body::after {
   .stage-items--left  { left:  2%; }
   .stage-items--right { right: 2%; }
 }
+
+/* ───── MBTI badge palette ───────────────────────────────── */
+/* NT 紫 / NF 绿 / SJ 蓝 / SP 黄 — applied to every place that shows
+   the 4-letter MBTI tag via [data-mbti-group]. */
+:root {
+  --mbti-nt:        #8E69D6;  --mbti-nt-deep:   #5F40A5;
+  --mbti-nf:        #5BB16E;  --mbti-nf-deep:   #2E7A40;
+  --mbti-sj:        #4A8DC9;  --mbti-sj-deep:   #2A5F92;
+  --mbti-sp:        #E6B038;  --mbti-sp-deep:   #A87B14;
+}
+
+[data-mbti-group="nt"] { background: var(--mbti-nt) !important; border-color: var(--mbti-nt-deep) !important; color: #FFF !important; }
+[data-mbti-group="nf"] { background: var(--mbti-nf) !important; border-color: var(--mbti-nf-deep) !important; color: #FFF !important; }
+[data-mbti-group="sj"] { background: var(--mbti-sj) !important; border-color: var(--mbti-sj-deep) !important; color: #FFF !important; }
+[data-mbti-group="sp"] { background: var(--mbti-sp) !important; border-color: var(--mbti-sp-deep) !important; color: #2A3A2C !important; }
+
+/* small box-shadow tint to match each color (only where there's a hard-shadow already) */
+.fellows__item-mbti[data-mbti-group="nt"]    { box-shadow: 1px 1px 0 var(--mbti-nt-deep); }
+.fellows__item-mbti[data-mbti-group="nf"]    { box-shadow: 1px 1px 0 var(--mbti-nf-deep); }
+.fellows__item-mbti[data-mbti-group="sj"]    { box-shadow: 1px 1px 0 var(--mbti-sj-deep); }
+.fellows__item-mbti[data-mbti-group="sp"]    { box-shadow: 1px 1px 0 var(--mbti-sp-deep); }
+
+.wall__other__mbti[data-mbti-group="nt"]     { box-shadow: 1px 1px 0 var(--mbti-nt-deep); }
+.wall__other__mbti[data-mbti-group="nf"]     { box-shadow: 1px 1px 0 var(--mbti-nf-deep); }
+.wall__other__mbti[data-mbti-group="sj"]     { box-shadow: 1px 1px 0 var(--mbti-sj-deep); }
+.wall__other__mbti[data-mbti-group="sp"]     { box-shadow: 1px 1px 0 var(--mbti-sp-deep); }
+
+.dressing-id__mbti[data-mbti-group="nt"]     { box-shadow: 1px 1px 0 var(--mbti-nt-deep); }
+.dressing-id__mbti[data-mbti-group="nf"]     { box-shadow: 1px 1px 0 var(--mbti-nf-deep); }
+.dressing-id__mbti[data-mbti-group="sj"]     { box-shadow: 1px 1px 0 var(--mbti-sj-deep); }
+.dressing-id__mbti[data-mbti-group="sp"]     { box-shadow: 1px 1px 0 var(--mbti-sp-deep); }
+
+.wall__hero-mbti[data-mbti-group="nt"]       { box-shadow: 2px 2px 0 var(--mbti-nt-deep); }
+.wall__hero-mbti[data-mbti-group="nf"]       { box-shadow: 2px 2px 0 var(--mbti-nf-deep); }
+.wall__hero-mbti[data-mbti-group="sj"]       { box-shadow: 2px 2px 0 var(--mbti-sj-deep); }
+.wall__hero-mbti[data-mbti-group="sp"]       { box-shadow: 2px 2px 0 var(--mbti-sp-deep); }
+
+/* unknown / XXXX falls through to the existing leaf-green pill */
+[data-mbti-group="unknown"] { /* keep default */ }
