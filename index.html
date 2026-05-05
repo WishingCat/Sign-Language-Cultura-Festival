@@ -262,6 +262,21 @@
         <h2 class="panel__title">同造型展示墙</h2>
         <p class="panel__sub" id="wallSub">——</p>
       </header>
+
+      <div class="wall__hero" id="wallHero" hidden>
+        <figure class="wall__hero-figure">
+          <img class="wall__hero-img" id="wallHeroImg" src="assets/characters/start.png" alt="你的造型">
+        </figure>
+        <div class="wall__hero-meta">
+          <span class="wall__hero-label">这是你今天的造型 ✿</span>
+          <span class="user-tag user-tag--mine wall__hero-name">
+            <span class="user-tag__nick" id="wallHeroNick">—</span>
+            <span class="user-tag__seq" id="wallHeroSeq">—</span>
+          </span>
+          <span class="wall__hero-mbti" id="wallHeroMbti"></span>
+        </div>
+      </div>
+
       <aside class="fellows" id="fellowsPanel" aria-live="polite">
         <header class="fellows__head">
           <span class="fellows__title">和你一起选了这身的同学</span>
@@ -275,6 +290,16 @@
           </button>
         </div>
       </aside>
+
+      <section class="wall__others" id="wallOthers" hidden>
+        <header class="wall__others-head">
+          <span class="wall__others-title">看看其他人的春装</span>
+          <button class="wall__others-refresh" type="button" id="wallOthersRefresh" title="换一批">↻</button>
+        </header>
+        <ul class="wall__others-list" id="wallOthersList"></ul>
+        <p class="wall__others-empty" id="wallOthersEmpty" hidden>暂时还没有其他人的造型 ✿</p>
+      </section>
+
       <div class="wall__empty" id="wallEmpty" hidden>
         <p>还没去试衣间挑一身春装呢 ✿</p>
         <button class="wall__cta" type="button" data-route="dressing">去试衣间 →</button>

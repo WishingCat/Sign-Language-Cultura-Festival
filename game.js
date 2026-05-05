@@ -82,6 +82,15 @@
   const $dressingMbti = document.getElementById("dressingMbti");
   const $wallSub = document.getElementById("wallSub");
   const $wallEmpty = document.getElementById("wallEmpty");
+  const $wallHero = document.getElementById("wallHero");
+  const $wallHeroImg = document.getElementById("wallHeroImg");
+  const $wallHeroNick = document.getElementById("wallHeroNick");
+  const $wallHeroSeq = document.getElementById("wallHeroSeq");
+  const $wallHeroMbti = document.getElementById("wallHeroMbti");
+  const $wallOthers = document.getElementById("wallOthers");
+  const $wallOthersList = document.getElementById("wallOthersList");
+  const $wallOthersEmpty = document.getElementById("wallOthersEmpty");
+  const $wallOthersRefresh = document.getElementById("wallOthersRefresh");
   const $boardForm = document.getElementById("boardForm");
   const $boardInput = document.getElementById("boardInput");
   const $boardCount = document.getElementById("boardCount");
@@ -918,14 +927,76 @@
       // show empty hint, hide list
       if ($wallEmpty) $wallEmpty.hidden = false;
       if ($fellowsPanel) $fellowsPanel.hidden = true;
+      if ($wallHero) $wallHero.hidden = true;
+      if ($wallOthers) $wallOthers.hidden = true;
       if ($wallSub) $wallSub.textContent = "还没有提交造型";
+      // even when user hasn't submitted, still let them browse other people's outfits
+      loadOthersStrip();
       return;
     }
     if ($wallEmpty) $wallEmpty.hidden = true;
     if ($fellowsPanel) $fellowsPanel.hidden = false;
     const { t, b, s } = lastSubmittedOutfit;
     if ($wallSub) $wallSub.textContent = `你的造型 ${codeOf(t,b,s)}`;
+    renderWallHero(t, b, s);
     loadFellows(t, b, s);
+    loadOthersStrip();
+  }
+
+  function renderWallHero(t, b, s) {
+    if (!$wallHero) return;
+    $wallHero.hidden = false;
+    if ($wallHeroImg) $wallHeroImg.src = `assets/characters/${t}${b}${s}.png`;
+    if ($wallHeroNick) $wallHeroNick.textContent = nickname || "—";
+    if ($wallHeroSeq)  $wallHeroSeq.textContent  = userDisplayUid || "";
+    if ($wallHeroMbti) $wallHeroMbti.textContent = (mbti && mbti !== "XXXX") ? mbti : "";
+  }
+
+  async function loadOthersStrip() {
+    if (!$wallOthers || !$wallOthersList) return;
+    $wallOthers.hidden = false;
+    const params = new URLSearchParams({ limit: "20" });
+    if (userId) params.set("excludeUid", userId);
+    if (lastSubmittedOutfit) {
+      const { t, b, s } = lastSubmittedOutfit;
+      params.set("exclude", codeOf(t, b, s));
+    }
+    try {
+      const res = await fetch(`/api/outfits/recent?${params}`);
+      if (!res.ok) throw new Error("http " + res.status);
+      const data = await res.json();
+      renderOthersStrip(data.list || []);
+    } catch (e) {
+      $wallOthersList.innerHTML = "";
+      if ($wallOthersEmpty) {
+        $wallOthersEmpty.hidden = false;
+        $wallOthersEmpty.textContent = "服务器暂时联系不上 ✿ 稍后再来";
+      }
+    }
+  }
+
+  function renderOthersStrip(list) {
+    if (!$wallOthersList) return;
+    if (!list.length) {
+      $wallOthersList.innerHTML = "";
+      if ($wallOthersEmpty) $wallOthersEmpty.hidden = false;
+      return;
+    }
+    if ($wallOthersEmpty) $wallOthersEmpty.hidden = true;
+    const html = list.slice(0, 12).map((e, i) => {
+      const seq = e.displayUid || (e.seq ? "#" + String(e.seq).padStart(3, "0") : "");
+      return `<li class="wall__other" style="animation-delay:${Math.min(i, 11) * 35}ms">
+        <figure class="wall__other__figure">
+          <img class="wall__other__img" src="assets/characters/${e.t}${e.b}${e.s}.png" alt="${escapeText(e.nick)} 的造型" loading="lazy">
+        </figure>
+        <span class="wall__other__nick">${escapeText(e.nick)}</span><span class="wall__other__seq">${escapeText(seq)}</span>${
+          e.mbti && e.mbti !== "XXXX"
+            ? `<span class="wall__other__mbti">${escapeText(e.mbti)}</span>`
+            : ""
+        }
+      </li>`;
+    }).join("");
+    $wallOthersList.innerHTML = html;
   }
 
   /* ── Board ────────────────────────────────────────────────────────────────── */
@@ -955,7 +1026,10 @@
         ? "/api/messages?limit=80"
         : `/api/messages?limit=80&since=${lastBoardTs}`;
       const res = await fetch(url);
-      if (!res.ok) return;
+      if (!res.ok) {
+        if (replace) showBoardOffline();
+        return;
+      }
       const data = await res.json();
       if (replace) {
         renderMessages(data.list || []);
@@ -965,8 +1039,16 @@
       }
       if (data.list && data.list[0]) lastBoardTs = data.list[0].ts;
     } catch (e) {
-      // silent
+      if (replace) showBoardOffline();
     }
+  }
+  function showBoardOffline() {
+    if (!$boardList) return;
+    $boardList.innerHTML = `<li class="board__note board__note--c2" style="--rot:1deg">
+      <div class="board__note__body">看起来这里的服务器暂时连不上 ✿ 请稍后再来吧。<br>（如果你在校园网部署的版本里看到这条，重启服务即可）</div>
+      <div class="board__note__foot"><span class="user-tag"><span class="user-tag__nick">✿ 春日提醒</span></span></div>
+    </li>`;
+    if ($boardEmpty) $boardEmpty.hidden = true;
   }
   function readRenderedMessages() {
     if (!$boardList) return [];
@@ -1122,6 +1204,7 @@
     /* board */
     if ($boardForm) $boardForm.addEventListener("submit", onBoardSubmit);
     if ($boardInput) $boardInput.addEventListener("input", syncBoardCount);
+    if ($wallOthersRefresh) $wallOthersRefresh.addEventListener("click", loadOthersStrip);
 
     /* rehydrate seq + dressingId */
     try {
