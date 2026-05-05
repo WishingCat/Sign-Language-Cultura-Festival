@@ -2804,3 +2804,45 @@ body::after {
 
 /* unknown / XXXX falls through to the existing leaf-green pill */
 [data-mbti-group="unknown"] { /* keep default */ }
+
+/* ───── Wall · 「前往留言区」 CTA inside fellows panel ────── */
+.fellows__to-board {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px auto 0;
+  padding: 11px 24px;
+  font-family: var(--hand);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: .08em;
+  color: var(--cream);
+  background: var(--leaf);
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 4px 5px 0 var(--leaf-deep), 0 10px 18px -8px rgba(42,58,44,.22);
+  cursor: pointer;
+  transition: transform .3s var(--bounce), background .25s, box-shadow .3s var(--bounce);
+}
+.fellows__to-board:hover {
+  transform: translate(-1px, -3px) rotate(-1deg);
+  background: var(--leaf-deep);
+  box-shadow: 6px 7px 0 var(--leaf-deep), 0 14px 22px -8px rgba(42,58,44,.28);
+}
+.fellows__to-board:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--leaf-deep); }
+.fellows__to-board-icon {
+  color: var(--bloom);
+  font-size: 14px;
+  text-shadow: 1px 1px 0 var(--ink);
+}
+.fellows__to-board-arrow {
+  font-size: 18px;
+  font-weight: 400;
+  transition: transform .3s var(--bounce);
+}
+.fellows__to-board:hover .fellows__to-board-arrow { transform: translateX(6px); }
+
+@media (max-width: 720px) {
+  .fellows__to-board { font-size: 14px; padding: 10px 18px; gap: 8px; }
+}
