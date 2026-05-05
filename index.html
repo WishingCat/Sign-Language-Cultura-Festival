@@ -132,6 +132,14 @@
     <span class="cover__bloom-burst" id="bloomBurst" aria-hidden="true"></span>
   </section>
 
+  <!-- ───── TABBAR ─────────────────────────────────────────────────────── -->
+  <nav class="tabbar" id="tabbar" role="tablist" aria-label="主导航" hidden>
+    <button class="tabbar__btn is-active" type="button" data-route="home"     role="tab" aria-selected="true">首页</button>
+    <button class="tabbar__btn"           type="button" data-route="dressing" role="tab" aria-selected="false">试衣间</button>
+    <button class="tabbar__btn"           type="button" data-route="wall"     role="tab" aria-selected="false">展示墙</button>
+    <button class="tabbar__btn"           type="button" data-route="board"    role="tab" aria-selected="false">留言区</button>
+  </nav>
+
   <!-- ───── GAME ───────────────────────────────────────────────────────── -->
   <div class="game" id="game" hidden>
 
@@ -224,9 +232,13 @@
           </div>
         </div>
 
-        <div class="tag">
-          <p class="tag__hint">点点左边的手语卡牌，为<span class="tag__name">「手小语」</span>挑一身春装。<br>
-            ——答案保密，请你用眼睛读手语 ✿</p>
+        <div class="dressing-id" id="dressingId" hidden>
+          <span class="dressing-id__mark" aria-hidden="true">✿</span>
+          <span class="user-tag">
+            <span class="user-tag__nick" id="dressingNick"></span>
+            <span class="user-tag__seq" id="dressingSeq"></span>
+          </span>
+          <span class="dressing-id__mbti" id="dressingMbti"></span>
         </div>
 
         <button class="stroll-btn" type="button" id="strollBtn" hidden>
@@ -236,20 +248,6 @@
           <span class="stroll-btn__petal stroll-btn__petal--r" aria-hidden="true">❀</span>
         </button>
 
-        <aside class="fellows" id="fellowsPanel" hidden aria-live="polite">
-          <header class="fellows__head">
-            <span class="fellows__title">和你一起选了这身的同学</span>
-            <span class="fellows__count" id="fellowsCount" aria-hidden="true">—</span>
-          </header>
-          <div class="fellows__body" id="fellowsBody">
-            <ul class="fellows__list" id="fellowsList"></ul>
-            <button class="fellows__more" type="button" id="fellowsMore" hidden>
-              <span class="fellows__more-text">展开全部</span>
-              <span class="fellows__more-icon" aria-hidden="true">▾</span>
-            </button>
-          </div>
-        </aside>
-
         <button class="reset-btn" type="button" id="resetBtn" title="重新来过">
           <span class="reset-btn__icon" aria-hidden="true">↻</span>
           <span class="reset-btn__text">换一身</span>
@@ -257,6 +255,55 @@
       </section>
 
     </main>
+
+    <!-- ───── WALL panel ──────────────────────────────────────────── -->
+    <section class="panel panel--wall" id="panelWall" hidden>
+      <header class="panel__head">
+        <h2 class="panel__title">同造型展示墙</h2>
+        <p class="panel__sub" id="wallSub">——</p>
+      </header>
+      <aside class="fellows" id="fellowsPanel" aria-live="polite">
+        <header class="fellows__head">
+          <span class="fellows__title">和你一起选了这身的同学</span>
+          <span class="fellows__count" id="fellowsCount" aria-hidden="true">—</span>
+        </header>
+        <div class="fellows__body" id="fellowsBody">
+          <ul class="fellows__list" id="fellowsList"></ul>
+          <button class="fellows__more" type="button" id="fellowsMore" hidden>
+            <span class="fellows__more-text">展开全部</span>
+            <span class="fellows__more-icon" aria-hidden="true">▾</span>
+          </button>
+        </div>
+      </aside>
+      <div class="wall__empty" id="wallEmpty" hidden>
+        <p>还没去试衣间挑一身春装呢 ✿</p>
+        <button class="wall__cta" type="button" data-route="dressing">去试衣间 →</button>
+      </div>
+      <button class="wall__back" type="button" data-route="dressing">换一身造型 ↻</button>
+    </section>
+
+    <!-- ───── BOARD panel ─────────────────────────────────────────── -->
+    <section class="panel panel--board" id="panelBoard" hidden>
+      <header class="panel__head">
+        <h2 class="panel__title">春日小纸条</h2>
+        <p class="panel__sub">把你想说的话留在风里 ✿</p>
+      </header>
+      <form class="board__compose" id="boardForm">
+        <textarea class="board__input" id="boardInput" maxlength="140"
+                  placeholder="写一句话…（最多 140 字）"></textarea>
+        <div class="board__compose-foot">
+          <span class="board__count" id="boardCount">0 / 140</span>
+          <button type="submit" class="board__post" id="boardPost">贴上去 ✿</button>
+        </div>
+        <p class="board__error" id="boardError" aria-live="polite"></p>
+      </form>
+      <div class="board__locked" id="boardLocked" hidden>
+        <p>先在首页起个昵称吧 ✿</p>
+        <button class="board__locked-cta" type="button" data-route="home">去首页 →</button>
+      </div>
+      <ul class="board__list" id="boardList"></ul>
+      <p class="board__empty" id="boardEmpty" hidden>还没有人留言 ✿ 来当第一张小纸条吧</p>
+    </section>
 
     <svg class="page-grass" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true">
       <path d="M0,60 Q60,18 120,52 T240,52 T360,52 T480,52 T600,52 T720,52 T840,52 T960,52 T1080,52 T1200,52 T1320,52 T1440,52 L1440,60 L0,60 Z" fill="var(--leaf-pale)" opacity=".85"/>

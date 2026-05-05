@@ -73,6 +73,23 @@
   const $strollBtn = document.getElementById("strollBtn");
   const $mbtiFieldset = document.getElementById("mbtiFieldset");
   const $mbtiOut = document.getElementById("mbtiOut");
+  const $tabbar = document.getElementById("tabbar");
+  const $panelWall = document.getElementById("panelWall");
+  const $panelBoard = document.getElementById("panelBoard");
+  const $dressingId = document.getElementById("dressingId");
+  const $dressingNick = document.getElementById("dressingNick");
+  const $dressingSeq = document.getElementById("dressingSeq");
+  const $dressingMbti = document.getElementById("dressingMbti");
+  const $wallSub = document.getElementById("wallSub");
+  const $wallEmpty = document.getElementById("wallEmpty");
+  const $boardForm = document.getElementById("boardForm");
+  const $boardInput = document.getElementById("boardInput");
+  const $boardCount = document.getElementById("boardCount");
+  const $boardError = document.getElementById("boardError");
+  const $boardList = document.getElementById("boardList");
+  const $boardEmpty = document.getElementById("boardEmpty");
+  const $boardLocked = document.getElementById("boardLocked");
+  const $boardPost = document.getElementById("boardPost");
   const railGrids = {
     top: document.getElementById("rail-top"),
     bottom: document.getElementById("rail-bottom"),
@@ -267,13 +284,46 @@
   /* ── Cover ↔ Game transitions ────────────────────────────────────────────── */
   let isTransitioning = false;
 
-  function enterGame() {
+  async function enterGame() {
     if (isTransitioning) return;
     if (!validateAndStoreNick()) return;
+    // Step 1: server-side check and register the nickname (sequential UID)
+    if ($startBtn) $startBtn.disabled = true;
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: userId, nickname, mbti }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 409) {
+        const sug = data.suggestion ? `，试试「${data.suggestion}」？` : "";
+        setNickError(`「${nickname}」已被同学使用 ✿${sug}`);
+        if (data.suggestion && $nickInput) $nickInput.value = data.suggestion;
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        setNickError("注册失败了，再试一次 ✿");
+        return;
+      }
+      userSeq = data.seq;
+      userDisplayUid = data.displayUid;
+      try {
+        localStorage.setItem(SEQ_KEY, String(userSeq));
+        localStorage.setItem(DUID_KEY, userDisplayUid);
+      } catch {}
+      updateDressingId();
+    } catch (e) {
+      setNickError("网络打了个盹儿，再试一次 ✿");
+      return;
+    } finally {
+      if ($startBtn) $startBtn.disabled = false;
+    }
+
+    // Step 2: animated transition to the game
     isTransitioning = true;
     if ($bloomBurst) {
       $bloomBurst.classList.remove("is-bursting");
-      // force reflow so animation re-triggers
       // eslint-disable-next-line no-unused-expressions
       $bloomBurst.offsetWidth;
       $bloomBurst.classList.add("is-bursting");
@@ -283,32 +333,39 @@
       $cover.hidden = true;
       $cover.classList.remove("is-leaving");
       if ($bloomBurst) $bloomBurst.classList.remove("is-bursting");
-      $game.hidden = false;
-      $game.classList.remove("is-entering");
-      // eslint-disable-next-line no-unused-expressions
-      $game.offsetWidth;
-      $game.classList.add("is-entering");
-      window.setTimeout(() => {
-        $game.classList.remove("is-entering");
-        isTransitioning = false;
-      }, 800);
+      revealApp();          // show tabbar + dressing panel
+      navigate("dressing");
+      isTransitioning = false;
     }, 520);
   }
 
   function returnToCover() {
     if (isTransitioning) return;
-    isTransitioning = true;
-    $game.hidden = true;
-    $cover.hidden = false;
-    $cover.classList.remove("is-leaving");
-    // eslint-disable-next-line no-unused-expressions
-    $cover.offsetWidth;
-    isTransitioning = false;
+    navigate("home");
   }
 
   /* ── Nickname ────────────────────────────────────────────────────────────── */
   const NICK_KEY = "signNickname";
+  const UID_KEY = "signUid";
+  const SEQ_KEY = "signSeq";
+  const DUID_KEY = "signDisplayUid";
   let nickname = "";
+  let userId = "";
+  let userSeq = 0;
+  let userDisplayUid = "";
+
+  function loadUserId() {
+    try {
+      let v = localStorage.getItem(UID_KEY) || "";
+      if (!/^[a-f0-9-]{8,}$/i.test(v)) {
+        v = (crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : "u-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem(UID_KEY, v);
+      }
+      userId = v;
+    } catch { userId = "anon-" + Math.random().toString(36).slice(2, 10); }
+  }
 
   function loadNickname() {
     try { nickname = (localStorage.getItem(NICK_KEY) || "").slice(0, 20); }
@@ -390,7 +447,6 @@
   }
 
   /* ── Fellows (same-outfit roster) ───────────────────────────────────────── */
-  const submittedCodes = new Set();
   let fellowsExpanded = false;
   let lastQueryCode = null;
   let inflight = null;
@@ -398,18 +454,14 @@
   function codeOf(t, b, s) { return `${t}${b}${s}`; }
 
   async function submitOutfit(t, b, s) {
-    const code = codeOf(t, b, s);
-    if (submittedCodes.has(code)) return;
-    submittedCodes.add(code);
     try {
       await fetch("/api/outfits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nickname, t, b, s, mbti }),
+        body: JSON.stringify({ uid: userId, nickname, t, b, s, mbti }),
       });
     } catch (e) {
       // silently swallow — name list will still try to load
-      submittedCodes.delete(code);
     }
   }
 
@@ -480,17 +532,26 @@
       $fellowsList.innerHTML =
         '<li class="fellows__empty">✿ 你是<strong>第一个</strong>穿这身的同学</li>';
       if ($fellowsMore) $fellowsMore.hidden = true;
+      if ($wallSub && lastSubmittedOutfit) {
+        const { t, b, s } = lastSubmittedOutfit;
+        $wallSub.textContent = `造型 ${codeOf(t,b,s)} · 你是第一位`;
+      }
       return;
     }
     let selfFlagged = false;
     const html = sorted.map((e, i) => {
-      const isSelf = !selfFlagged && e.nick === nickname;
+      const isSelf = !selfFlagged && e.seq && e.seq === userSeq;
       if (isSelf) selfFlagged = true;
       const cls = "fellows__item" + (isSelf ? " fellows__item--self" : "");
       const delay = (i * 35).toFixed(0);
+      const seq = e.displayUid || (e.seq ? "#" + String(e.seq).padStart(3, "0") : "");
       return `<li class="${cls}" style="animation-delay:${delay}ms">
         <span class="fellows__item-mark">${isSelf ? "✿你" : "✿"}</span>
-        <span class="fellows__item-nick">${escapeText(e.nick)}</span>${
+        <span class="user-tag${isSelf?" user-tag--mine":""}">
+          <span class="user-tag__nick fellows__item-nick">${escapeText(e.nick)}</span>${
+            seq ? `<span class="user-tag__seq fellows__item-seq">${escapeText(seq)}</span>` : ""
+          }
+        </span>${
           e.mbti && e.mbti !== "XXXX"
             ? `<span class="fellows__item-mbti">${escapeText(e.mbti)}</span>`
             : ""
@@ -499,6 +560,10 @@
       </li>`;
     }).join("");
     $fellowsList.innerHTML = html;
+    if ($wallSub && lastSubmittedOutfit) {
+      const { t, b, s } = lastSubmittedOutfit;
+      $wallSub.textContent = `造型 ${codeOf(t,b,s)} · 共 ${sorted.length} 人`;
+    }
     if (sorted.length > 12) {
       $fellowsList.classList.add("is-collapsed");
       if ($fellowsMore) {
@@ -566,10 +631,10 @@
     toggleCompleteStamp(true);
     // Step 2: hide the button (after the stamp animation kicks in)
     window.setTimeout(() => { hideStrollBtn(); }, 450);
-    // Step 3: submit + load roster (fellows panel renders skeleton then list)
-    submitOutfit(t, b, s);
-    await loadFellows(t, b, s);
-    strollBusy = false;
+    // Step 3: submit + remember outfit, then navigate to the Wall after the stamp animation.
+    setLastOutfit(t, b, s);
+    try { await submitOutfit(t, b, s); } catch {}
+    window.setTimeout(() => { navigate("wall"); strollBusy = false; }, 900);
   }
 
   /* ── Reset ───────────────────────────────────────────────────────────────── */
@@ -774,6 +839,226 @@
     requestAnimationFrame(tick);
   }
 
+  /* ── Routing + tabs ──────────────────────────────────────────────────────── */
+  const ROUTES = ["home", "dressing", "wall", "board"];
+  let currentRoute = "home";
+  let messagePollTimer = null;
+
+  function isRegistered() { return userSeq > 0; }
+
+  function revealApp() {
+    if ($tabbar) $tabbar.hidden = false;
+    if ($game) $game.hidden = false;
+  }
+  function hideApp() {
+    if ($tabbar) $tabbar.hidden = true;
+    if ($game) $game.hidden = true;
+  }
+
+  function setActiveTab(route) {
+    if (!$tabbar) return;
+    $tabbar.querySelectorAll(".tabbar__btn").forEach(btn => {
+      const on = btn.dataset.route === route;
+      btn.classList.toggle("is-active", on);
+      btn.setAttribute("aria-selected", on ? "true" : "false");
+    });
+  }
+
+  function showOnly(route) {
+    // map: home=cover, dressing=$game, wall=$panelWall, board=$panelBoard
+    if ($cover)      $cover.hidden      = route !== "home";
+    if ($game)       $game.hidden       = !(route === "dressing");
+    if ($panelWall)  $panelWall.hidden  = route !== "wall";
+    if ($panelBoard) $panelBoard.hidden = route !== "board";
+    setActiveTab(route);
+    if (route !== "board") stopMessagePoll();
+  }
+
+  function navigate(route) {
+    if (!ROUTES.includes(route)) route = "home";
+    // gating: must be registered to leave home
+    if (!isRegistered() && route !== "home") route = "home";
+    currentRoute = route;
+    if (route === "home" && isRegistered()) {
+      // home stays usable so the cover splash is visible
+      showOnly("home");
+    } else {
+      showOnly(route);
+    }
+    if (route === "wall")  enterWall();
+    if (route === "board") enterBoard();
+    if (location.hash !== "#/" + route) {
+      try { history.replaceState(null, "", "#/" + route); } catch {}
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function onHashChange() {
+    const m = (location.hash || "").match(/^#\/(\w+)/);
+    const route = m ? m[1] : "home";
+    navigate(route);
+  }
+
+  /* ── Dressing-id badge ───────────────────────────────────────────────────── */
+  function updateDressingId() {
+    if (!$dressingId) return;
+    if (!isRegistered()) { $dressingId.hidden = true; return; }
+    $dressingId.hidden = false;
+    if ($dressingNick) $dressingNick.textContent = nickname;
+    if ($dressingSeq)  $dressingSeq.textContent  = userDisplayUid || "";
+    if ($dressingMbti) $dressingMbti.textContent = (mbti && mbti !== "XXXX") ? mbti : "";
+  }
+
+  /* ── Wall enter ───────────────────────────────────────────────────────────── */
+  let lastSubmittedOutfit = null;
+  function setLastOutfit(t, b, s) { lastSubmittedOutfit = { t, b, s }; }
+  function enterWall() {
+    if (!$panelWall) return;
+    if (!lastSubmittedOutfit) {
+      // show empty hint, hide list
+      if ($wallEmpty) $wallEmpty.hidden = false;
+      if ($fellowsPanel) $fellowsPanel.hidden = true;
+      if ($wallSub) $wallSub.textContent = "还没有提交造型";
+      return;
+    }
+    if ($wallEmpty) $wallEmpty.hidden = true;
+    if ($fellowsPanel) $fellowsPanel.hidden = false;
+    const { t, b, s } = lastSubmittedOutfit;
+    if ($wallSub) $wallSub.textContent = `你的造型 ${codeOf(t,b,s)}`;
+    loadFellows(t, b, s);
+  }
+
+  /* ── Board ────────────────────────────────────────────────────────────────── */
+  let lastBoardTs = 0;
+
+  function enterBoard() {
+    if ($boardLocked) $boardLocked.hidden = isRegistered();
+    if ($boardForm) $boardForm.hidden = !isRegistered();
+    fetchMessages(true);
+    startMessagePoll();
+    if ($boardInput) syncBoardCount();
+  }
+  function syncBoardCount() {
+    if (!$boardCount || !$boardInput) return;
+    $boardCount.textContent = `${$boardInput.value.length} / 140`;
+  }
+  function startMessagePoll() {
+    stopMessagePoll();
+    messagePollTimer = window.setInterval(() => fetchMessages(false), 30_000);
+  }
+  function stopMessagePoll() {
+    if (messagePollTimer) { window.clearInterval(messagePollTimer); messagePollTimer = null; }
+  }
+  async function fetchMessages(replace) {
+    try {
+      const url = replace
+        ? "/api/messages?limit=80"
+        : `/api/messages?limit=80&since=${lastBoardTs}`;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (replace) {
+        renderMessages(data.list || []);
+      } else if (data.list && data.list.length) {
+        // prepend fresh notes
+        renderMessages([...data.list, ...readRenderedMessages()]);
+      }
+      if (data.list && data.list[0]) lastBoardTs = data.list[0].ts;
+    } catch (e) {
+      // silent
+    }
+  }
+  function readRenderedMessages() {
+    if (!$boardList) return [];
+    return Array.from($boardList.querySelectorAll(".board__note")).map(li => ({
+      id: li.dataset.id,
+      ts: Number(li.dataset.ts),
+      body: li.querySelector(".board__note__body")?.textContent || "",
+      nick: li.dataset.nick || "",
+      mbti: li.dataset.mbti || "XXXX",
+      seq: Number(li.dataset.seq) || null,
+      displayUid: li.dataset.duid || null,
+    }));
+  }
+  function renderMessages(list) {
+    if (!$boardList) return;
+    if (!list || list.length === 0) {
+      $boardList.innerHTML = "";
+      if ($boardEmpty) $boardEmpty.hidden = false;
+      return;
+    }
+    if ($boardEmpty) $boardEmpty.hidden = true;
+    // Newest first
+    const sorted = list.slice().sort((a, b) => b.ts - a.ts);
+    const seen = new Set();
+    const html = sorted.filter(m => {
+      if (!m.id || seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    }).map((m, i) => {
+      const c = ((m.ts | 0) % 4) + 1;
+      const rot = ((m.ts | 0) % 5 - 2) * 1.0;
+      const isMine = m.seq && m.seq === userSeq;
+      const cls = `board__note board__note--c${c}` + (isMine ? " board__note--mine" : "");
+      const time = fmtTime(m.ts);
+      const seq = m.displayUid || (m.seq ? "#" + String(m.seq).padStart(3, "0") : "");
+      return `<li class="${cls}" data-id="${escapeText(m.id)}" data-ts="${m.ts}"
+        data-nick="${escapeText(m.nick)}" data-mbti="${escapeText(m.mbti||"")}"
+        data-seq="${m.seq||""}" data-duid="${escapeText(seq)}"
+        style="--rot:${rot}deg;animation-delay:${Math.min(i,12)*30}ms">
+        <div class="board__note__body">${escapeText(m.body)}</div>
+        <div class="board__note__foot">
+          <span class="user-tag${isMine?" user-tag--mine":""}">
+            <span class="user-tag__nick">✿ ${escapeText(m.nick||"匿名")}</span>
+            <span class="user-tag__seq">${escapeText(seq)}</span>
+          </span>
+          <span class="board__note__time">${time}</span>
+        </div>
+      </li>`;
+    }).join("");
+    $boardList.innerHTML = html;
+  }
+
+  async function postMessage(body) {
+    const res = await fetch("/api/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uid: userId, body }),
+    });
+    return res;
+  }
+  async function onBoardSubmit(e) {
+    e.preventDefault();
+    if (!isRegistered()) {
+      if ($boardError) $boardError.textContent = "先去首页起一个昵称吧 ✿";
+      return;
+    }
+    const body = ($boardInput?.value || "").trim();
+    if (!body) {
+      if ($boardError) $boardError.textContent = "写一句话再贴上去吧 ✿";
+      return;
+    }
+    if ($boardError) $boardError.textContent = "";
+    if ($boardPost) $boardPost.disabled = true;
+    try {
+      const res = await postMessage(body);
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 429) {
+        if ($boardError) $boardError.textContent = "稍歇片刻再贴 ✿（每分钟最多 3 张）";
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        if ($boardError) $boardError.textContent = "贴失败了，再试一次 ✿";
+        return;
+      }
+      if ($boardInput) $boardInput.value = "";
+      syncBoardCount();
+      await fetchMessages(true);
+    } finally {
+      if ($boardPost) $boardPost.disabled = false;
+    }
+  }
+
   /* ── Wire it up ──────────────────────────────────────────────────────────── */
   function init() {
     renderRails();
@@ -794,6 +1079,7 @@
     });
     preloadCharacters();
     initPetalTrail();
+    loadUserId();
     loadNickname();
     if ($nickInput) {
       $nickInput.addEventListener("input", () => setNickError(""));
@@ -813,6 +1099,69 @@
         if (!axis || !value) return;
         setMbtiChar(axis, value);
       });
+    }
+
+    /* tabbar + routing */
+    if ($tabbar) {
+      $tabbar.addEventListener("click", (e) => {
+        const btn = e.target.closest(".tabbar__btn");
+        if (!btn) return;
+        navigate(btn.dataset.route);
+      });
+    }
+    document.addEventListener("click", (e) => {
+      const el = e.target.closest("[data-route]");
+      if (!el) return;
+      // tabbar handled above; out-of-tabbar route triggers (CTA buttons)
+      if (el.closest(".tabbar")) return;
+      e.preventDefault();
+      navigate(el.dataset.route);
+    });
+    window.addEventListener("hashchange", onHashChange);
+
+    /* board */
+    if ($boardForm) $boardForm.addEventListener("submit", onBoardSubmit);
+    if ($boardInput) $boardInput.addEventListener("input", syncBoardCount);
+
+    /* rehydrate seq + dressingId */
+    try {
+      const s = Number(localStorage.getItem(SEQ_KEY)) || 0;
+      const d = localStorage.getItem(DUID_KEY) || "";
+      if (s > 0 && nickname) {
+        userSeq = s;
+        userDisplayUid = d || ("#" + String(s).padStart(3, "0"));
+      }
+    } catch {}
+    // If we already know the user, validate against server in the background.
+    if (userId && isRegistered()) {
+      revealApp();
+      updateDressingId();
+      navigate(((location.hash || "").match(/^#\/(\w+)/) || [, "home"])[1]);
+      // background sanity ping
+      fetch(`/api/users/me?uid=${encodeURIComponent(userId)}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(j => {
+          if (j && j.ok) {
+            userSeq = j.seq;
+            userDisplayUid = j.displayUid;
+            try {
+              localStorage.setItem(SEQ_KEY, String(j.seq));
+              localStorage.setItem(DUID_KEY, j.displayUid);
+            } catch {}
+            updateDressingId();
+          } else {
+            // server forgot us — drop local seq, send back to home
+            userSeq = 0; userDisplayUid = "";
+            try { localStorage.removeItem(SEQ_KEY); localStorage.removeItem(DUID_KEY); } catch {}
+            hideApp();
+            $cover.hidden = false;
+          }
+        })
+        .catch(() => { /* offline ok */ });
+    } else {
+      hideApp();
+      // ensure cover is visible, panels hidden
+      if ($cover) $cover.hidden = false;
     }
   }
 
