@@ -9,23 +9,22 @@
   //   character file =  `${top??0}${bottom??0}${shoe??0}.png`
   const CATALOG = {
     top: [
-      { value: 1, src: "assets/signs/top-1.jpg" },
-      { value: 2, src: "assets/signs/top-2.jpg" },
-      { value: 3, src: "assets/signs/top-3.jpg" },
-      { value: 4, src: "assets/signs/top-4.jpg" },
+      { value: 1, src: "assets/signs/top-1.jpg",    item: "assets/items/top-1.png",    label: "羽绒服" },
+      { value: 2, src: "assets/signs/top-2.jpg",    item: "assets/items/top-2.png",    label: "T 恤" },
+      { value: 3, src: "assets/signs/top-3.jpg",    item: "assets/items/top-3.png",    label: "毛衣" },
+      { value: 4, src: "assets/signs/top-4.jpg",    item: "assets/items/top-4.png",    label: "衬衫" },
     ],
     bottom: [
-      { value: 1, src: "assets/signs/bottom-1.jpg" },
-      { value: 2, src: "assets/signs/bottom-2.jpg" },
-      { value: 3, src: "assets/signs/bottom-3.jpg" },
-      { value: 4, src: "assets/signs/bottom-4.jpg" },
+      { value: 1, src: "assets/signs/bottom-1.jpg", item: "assets/items/bottom-1.png", label: "牛仔裤" },
+      { value: 2, src: "assets/signs/bottom-2.jpg", item: "assets/items/bottom-2.png", label: "毛裤" },
+      { value: 3, src: "assets/signs/bottom-3.jpg", item: "assets/items/bottom-3.png", label: "短裤" },
+      { value: 4, src: "assets/signs/bottom-4.jpg", item: "assets/items/bottom-4.png", label: "裙子" },
     ],
-    // shoe digit "4" (靴子) intentionally absent — no rendered character images.
     shoe: [
-      { value: 1, src: "assets/signs/shoe-1.jpg" },
-      { value: 2, src: "assets/signs/shoe-2.jpg" },
-      { value: 3, src: "assets/signs/shoe-3.jpg" },
-      { value: 5, src: "assets/signs/shoe-5.png" },
+      { value: 1, src: "assets/signs/shoe-1.jpg",   item: "assets/items/shoe-1.png",   label: "皮鞋" },
+      { value: 2, src: "assets/signs/shoe-2.jpg",   item: "assets/items/shoe-2.png",   label: "高跟鞋" },
+      { value: 3, src: "assets/signs/shoe-3.jpg",   item: "assets/items/shoe-3.png",   label: "拖鞋" },
+      { value: 4, src: "assets/items/shoe-4.png",   item: "assets/items/shoe-4.png",   label: "靴子" },
     ],
   };
 
@@ -39,20 +38,10 @@
     shoe: null,
   };
 
-  // The artist did not draw certain bottom + shoe combinations:
-  //   毛裤(2) + 运动鞋(5)   ← no athletic-shoes-with-thermal-pants
-  //   短裤(3) + 皮鞋(1)     ← no leather-shoes-with-shorts
-  //   裙子(4) + 皮鞋(1)     ← no leather-shoes-with-skirt
-  const INCOMPATIBLE_BOTTOM_SHOE = {
-    2: new Set([5]),
-    3: new Set([1]),
-    4: new Set([1]),
-  };
-  function isShoeCompatible(shoeValue) {
-    if (state.bottom == null) return true;
-    const blocked = INCOMPATIBLE_BOTTOM_SHOE[state.bottom];
-    return !blocked || !blocked.has(shoeValue);
-  }
+  // Two combinations that don't have a `${t}${b}4.png` rendered: 144 and 414.
+  // For those we fall back to `${t}${b}5.png` which the asset folder still ships.
+  const SHOE4_FALLBACK = new Set(["14", "41"]);
+  function isShoeCompatible() { return true; }
 
   /* ── DOM refs ────────────────────────────────────────────────────────────── */
   const $character = document.getElementById("character");
@@ -200,6 +189,49 @@
       const btn = cat.querySelector(".rail__head-btn");
       if (btn) btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
     });
+    syncStageItems();
+  }
+
+  /* ── Side item display (items flank the stage based on active rail) ──── */
+  const $stageItemsLeft  = document.getElementById("stageItemsLeft");
+  const $stageItemsRight = document.getElementById("stageItemsRight");
+  let renderedItemsSlot = null;
+
+  function renderStageItemsFor(slot) {
+    if (!$stageItemsLeft || !$stageItemsRight) return;
+    if (renderedItemsSlot === slot) return; // already rendered
+    renderedItemsSlot = slot;
+    const items = (CATALOG[slot] || []).filter(it => it.item);
+    // Two on each side; pad with blanks if fewer.
+    const left = items.slice(0, 2);
+    const right = items.slice(2, 4);
+    $stageItemsLeft.innerHTML  = left.map(itemCardHTML).join("");
+    $stageItemsRight.innerHTML = right.map(itemCardHTML).join("");
+  }
+  function itemCardHTML(it) {
+    return `<div class="stage-item" data-slot-value="${it.value}">
+      <img class="stage-item__img" src="${it.item}" alt="${it.label}" loading="lazy" draggable="false">
+      <span class="stage-item__label">${it.label}</span>
+    </div>`;
+  }
+  function syncStageItems() {
+    if (!$stageItemsLeft || !$stageItemsRight) return;
+    const slot = expandedSlot;
+    if (!slot || !isSlotEnabled(slot)) {
+      $stageItemsLeft.classList.remove("is-visible");
+      $stageItemsRight.classList.remove("is-visible");
+      return;
+    }
+    renderStageItemsFor(slot);
+    // Mark currently selected item active
+    const selected = state[slot];
+    [$stageItemsLeft, $stageItemsRight].forEach(box => {
+      box.querySelectorAll(".stage-item").forEach(el => {
+        const v = Number(el.dataset.slotValue);
+        el.classList.toggle("is-active", v === selected);
+      });
+      box.classList.add("is-visible");
+    });
   }
 
   function syncCardStates() {
@@ -218,6 +250,7 @@
       btn.dataset.locked = enabled ? "false" : "true";
       btn.dataset.incompatible = incompatible ? "true" : "false";
     });
+    syncStageItems();
   }
 
   function syncCategorySelectedFlag() {
@@ -242,7 +275,9 @@
     } else {
       const t = top ?? 0;
       const b = bottom ?? 0;
-      const s = shoe ?? 0;
+      let s = shoe ?? 0;
+      // 144 / 414 don't exist; the artist used digit 5 for those two combos.
+      if (s === 4 && SHOE4_FALLBACK.has(`${t}${b}`)) s = 5;
       nextSrc = `assets/characters/${t}${b}${s}.png`;
     }
 
@@ -675,15 +710,15 @@
     const paths = ["assets/characters/start.png", "assets/characters/000.png"];
     const tops = [1, 2, 3, 4];
     const bottoms = [1, 2, 3, 4];
-    const shoes = [1, 2, 3, 5];
+    const shoes = [1, 2, 3, 4];
     for (const t of tops) {
       paths.push(`assets/characters/${t}00.png`);
       for (const b of bottoms) {
         paths.push(`assets/characters/${t}${b}0.png`);
-        const blocked = INCOMPATIBLE_BOTTOM_SHOE[b] || new Set();
         for (const s of shoes) {
-          if (blocked.has(s)) continue;
-          paths.push(`assets/characters/${t}${b}${s}.png`);
+          // tb-only "144" / "414" combos render shoe digit 5 instead.
+          const sFinal = (s === 4 && SHOE4_FALLBACK.has(`${t}${b}`)) ? 5 : s;
+          paths.push(`assets/characters/${t}${b}${sFinal}.png`);
         }
       }
     }
