@@ -2708,21 +2708,21 @@ body::after {
 /* ───── Stage-flanking item display ─────────────────────── */
 .stage-items {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 22%;
-  max-width: 96px;
+  top: 6%;
+  bottom: 18%;
+  width: 28%;
+  max-width: 130px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  justify-content: space-between;
   align-items: center;
   pointer-events: none;
   z-index: 6;
   opacity: 0;
   transition: opacity .35s var(--soft);
 }
-.stage-items--left  { left:  4%; }
-.stage-items--right { right: 4%; }
+.stage-items--left  { left:  3%; }
+.stage-items--right { right: 3%; }
 .stage-items.is-visible { opacity: 1; }
 .stage-item {
   position: relative;
@@ -2730,19 +2730,20 @@ body::after {
   aspect-ratio: 1 / 1;
   background: rgba(255, 249, 236, .82);
   border: 2px solid var(--ink);
-  border-radius: 16px;
+  border-radius: 18px;
   box-shadow: 3px 3px 0 var(--ink);
   display: grid;
   place-items: center;
-  padding: 4px;
+  padding: 0;
   transform-origin: center center;
-  animation: itemPop .55s var(--bounce) both;
+  animation: itemPop .55s var(--bounce) both, itemFloat 6s ease-in-out infinite;
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
+  will-change: transform;
 }
 .stage-item__img {
-  max-width: 90%;
-  max-height: 90%;
+  width: 96%;
+  height: 96%;
   object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
@@ -2751,28 +2752,37 @@ body::after {
   background: linear-gradient(135deg, #FFE8EF 0%, rgba(255, 249, 236, .92) 100%);
   border-color: var(--bloom-deep);
   box-shadow: 4px 4px 0 var(--bloom-deep);
-  transform: rotate(-2deg) scale(1.06);
+  animation: itemPop .55s var(--bounce) both, itemActive 2.4s ease-in-out infinite;
 }
-.stage-item:nth-child(odd)  { transform: rotate(-2deg); }
-.stage-item:nth-child(even) { transform: rotate( 2deg); }
-.stage-item:nth-child(odd).is-active  { transform: rotate(-2deg) scale(1.06); }
-.stage-item:nth-child(even).is-active { transform: rotate( 2deg) scale(1.06); }
+/* per-slot baseline tilt + animation timing offsets for variety */
+.stage-items--left  .stage-item:nth-child(1) { animation-delay: 0s,    -0.0s; --tilt: -3deg; }
+.stage-items--left  .stage-item:nth-child(2) { animation-delay: .12s, -1.6s; --tilt:  2deg; }
+.stage-items--right .stage-item:nth-child(1) { animation-delay: .06s, -3.0s; --tilt:  3deg; }
+.stage-items--right .stage-item:nth-child(2) { animation-delay: .18s, -4.5s; --tilt: -2deg; }
+.stage-item { transform: rotate(var(--tilt, 0deg)); }
+
 @keyframes itemPop {
-  0%   { opacity: 0; transform: rotate(0deg) translateY(20px) scale(.6); }
-  60%  { opacity: 1; transform: rotate(-2deg) translateY(-3px) scale(1.04); }
-  100% { opacity: 1; }
+  0%   { opacity: 0; transform: rotate(0deg) translateY(28px) scale(.55); }
+  60%  { opacity: 1; transform: rotate(var(--tilt, 0deg)) translateY(-4px) scale(1.05); }
+  100% { opacity: 1; transform: rotate(var(--tilt, 0deg)) translateY(0) scale(1); }
 }
-.stage-items--left  .stage-item:nth-child(1) { animation-delay: .05s; }
-.stage-items--left  .stage-item:nth-child(2) { animation-delay: .15s; }
-.stage-items--right .stage-item:nth-child(1) { animation-delay: .10s; }
-.stage-items--right .stage-item:nth-child(2) { animation-delay: .20s; }
+@keyframes itemFloat {
+  0%, 100% { transform: rotate(var(--tilt, 0deg))                        translateY(0); }
+  25%      { transform: rotate(calc(var(--tilt, 0deg) + 2deg))           translateY(-6px); }
+  50%      { transform: rotate(var(--tilt, 0deg))                        translateY(0); }
+  75%      { transform: rotate(calc(var(--tilt, 0deg) - 2deg))           translateY(-3px); }
+}
+@keyframes itemActive {
+  0%, 100% { transform: rotate(calc(var(--tilt, 0deg) - 1deg)) scale(1.06) translateY(-2px); }
+  50%      { transform: rotate(calc(var(--tilt, 0deg) + 1deg)) scale(1.10) translateY(-6px); }
+}
 
 /* shrink the side panel proportionally on narrower viewports */
 @media (max-width: 1060px) {
-  .stage-items { gap: 8px; max-width: 80px; }
+  .stage-items { max-width: 110px; width: 26%; }
 }
 @media (max-width: 720px) {
-  .stage-items { gap: 6px; max-width: 60px; width: 18%; }
+  .stage-items { max-width: 80px; width: 22%; top: 4%; bottom: 16%; }
   .stage-items--left  { left:  2%; }
   .stage-items--right { right: 2%; }
 }
