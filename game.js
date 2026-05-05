@@ -1039,9 +1039,10 @@
   }
   async function fetchMessages(replace) {
     try {
+      const uidParam = userId ? `&uid=${encodeURIComponent(userId)}` : "";
       const url = replace
-        ? "/api/messages?limit=80"
-        : `/api/messages?limit=80&since=${lastBoardTs}`;
+        ? `/api/messages?limit=80${uidParam}`
+        : `/api/messages?limit=80&since=${lastBoardTs}${uidParam}`;
       const res = await fetch(url);
       if (!res.ok) {
         if (replace) showBoardOffline();
@@ -1104,6 +1105,7 @@
       return `<li class="${cls}" data-id="${escapeText(m.id)}" data-ts="${m.ts}"
         data-nick="${escapeText(m.nick)}" data-mbti="${escapeText(m.mbti||"")}"
         data-seq="${m.seq||""}" data-duid="${escapeText(seq)}"
+        data-flowers="${m.flowers||0}"
         style="--rot:${rot}deg;animation-delay:${Math.min(i,12)*30}ms">
         <div class="board__note__body">${escapeText(m.body)}</div>
         <div class="board__note__foot">
@@ -1113,6 +1115,13 @@
           </span>
           <span class="board__note__time">${time}</span>
         </div>
+        <button class="board__flower${m.mineFlower ? " is-given" : ""}"
+                type="button"
+                data-flower="${escapeText(m.id)}"
+                aria-label="送花">
+          <span class="board__flower-icon" aria-hidden="true">✿</span>
+          <span class="board__flower-count">${m.flowers || 0}</span>
+        </button>
       </li>`;
     }).join("");
     $boardList.innerHTML = html;
@@ -1126,6 +1135,56 @@
     });
     return res;
   }
+
+  async function onFlowerClick(e) {
+    const btn = e.target.closest(".board__flower");
+    if (!btn) return;
+    const mid = btn.dataset.flower;
+    if (!mid) return;
+    if (!isRegistered()) {
+      if ($boardError) $boardError.textContent = "先在首页起一个昵称就可以送花啦 ✿";
+      return;
+    }
+    if (btn.classList.contains("is-given")) {
+      // Visual nudge if already given
+      btn.classList.remove("is-pulse");
+      // eslint-disable-next-line no-unused-expressions
+      btn.offsetWidth;
+      btn.classList.add("is-pulse");
+      return;
+    }
+    btn.disabled = true;
+    btn.classList.add("is-given");
+    sproutFlowerBurst(btn);
+    try {
+      const res = await fetch(`/api/messages/${encodeURIComponent(mid)}/flower`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid: userId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        const countEl = btn.querySelector(".board__flower-count");
+        if (countEl) countEl.textContent = String(data.count);
+      } else {
+        // rollback if server rejected
+        btn.classList.remove("is-given");
+      }
+    } catch {
+      btn.classList.remove("is-given");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function sproutFlowerBurst(btn) {
+    const burst = document.createElement("span");
+    burst.className = "board__flower-burst";
+    burst.textContent = "✿";
+    btn.appendChild(burst);
+    setTimeout(() => burst.remove(), 900);
+  }
+
   async function onBoardSubmit(e) {
     e.preventDefault();
     if (!isRegistered()) {
@@ -1220,6 +1279,7 @@
 
     /* board */
     if ($boardForm) $boardForm.addEventListener("submit", onBoardSubmit);
+    if ($boardList) $boardList.addEventListener("click", onFlowerClick);
     if ($boardInput) $boardInput.addEventListener("input", syncBoardCount);
     if ($wallOthersRefresh) $wallOthersRefresh.addEventListener("click", loadOthersStrip);
 
