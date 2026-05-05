@@ -2679,7 +2679,7 @@ body::after {
 /* ───── Stage-flanking item display ─────────────────────── */
 .stage-items {
   position: absolute;
-  top: 6%;
+  top: 18%;
   bottom: 18%;
   width: 28%;
   max-width: 130px;
@@ -2761,7 +2761,7 @@ body::after {
   .stage-items { max-width: 110px; width: 26%; }
 }
 @media (max-width: 720px) {
-  .stage-items { max-width: 80px; width: 22%; top: 4%; bottom: 16%; }
+  .stage-items { max-width: 80px; width: 22%; top: 14%; bottom: 16%; }
   .stage-items--left  { left:  2%; }
   .stage-items--right { right: 2%; }
 }
