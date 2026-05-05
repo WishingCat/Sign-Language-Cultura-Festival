@@ -2708,22 +2708,21 @@ body::after {
 /* ───── Stage-flanking item display ─────────────────────── */
 .stage-items {
   position: absolute;
-  top: 8%;
-  bottom: 18%;
+  top: 50%;
+  transform: translateY(-50%);
   width: 22%;
   max-width: 96px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  justify-content: center;
   align-items: center;
   pointer-events: none;
-  z-index: 4;
+  z-index: 6;
   opacity: 0;
   transition: opacity .35s var(--soft);
 }
-.stage-items--left  { left:  3%; }
-.stage-items--right { right: 3%; }
+.stage-items--left  { left:  4%; }
+.stage-items--right { right: 4%; }
 .stage-items.is-visible { opacity: 1; }
 .stage-item {
   position: relative;
