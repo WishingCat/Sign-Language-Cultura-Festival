@@ -205,11 +205,12 @@
     // Two on each side; pad with blanks if fewer.
     const left = items.slice(0, 2);
     const right = items.slice(2, 4);
-    $stageItemsLeft.innerHTML  = left.map(itemCardHTML).join("");
-    $stageItemsRight.innerHTML = right.map(itemCardHTML).join("");
+    $stageItemsLeft.innerHTML  = left.map(it => itemCardHTML(it, slot)).join("");
+    $stageItemsRight.innerHTML = right.map(it => itemCardHTML(it, slot)).join("");
   }
-  function itemCardHTML(it) {
-    return `<div class="stage-item" data-slot-value="${it.value}">
+  function itemCardHTML(it, slot) {
+    const slotCls = `stage-item--${slot}`;
+    return `<div class="stage-item ${slotCls}" data-slot-value="${it.value}">
       <img class="stage-item__img" src="${it.item}" alt="${it.label}" loading="lazy" draggable="false">
     </div>`;
   }
