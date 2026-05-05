@@ -2887,3 +2887,51 @@ body::after {
 @media (max-width: 720px) {
   .fellows__to-board { font-size: 14px; padding: 10px 18px; gap: 8px; }
 }
+
+/* ───── Wall hero easter-egg punch ───────────────────────── */
+.wall__hero-img {
+  cursor: pointer;
+  transition: filter .2s;
+}
+.wall__hero-img:hover {
+  filter: drop-shadow(0 6px 14px rgba(255,143,171,.45));
+}
+.wall__hero-img.is-punched {
+  animation: heroPunch .55s var(--bounce);
+}
+@keyframes heroPunch {
+  0%   { transform: scale(1)    rotate(0deg); }
+  20%  { transform: scale(.86)  rotate(-4deg); }
+  40%  { transform: scale(1.14) rotate(5deg); }
+  60%  { transform: scale(.96)  rotate(-2deg); }
+  100% { transform: scale(1)    rotate(0deg); }
+}
+
+.love-sticker {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 8px 16px rgba(230,101,137,.35));
+  animation: loveDrift 1.4s var(--soft) forwards;
+  will-change: transform, opacity;
+}
+@keyframes loveDrift {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg) scale(.45);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(0, -16px) rotate(8deg) scale(1.18);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(calc(var(--lx) * .35), calc(var(--ly) * .35)) rotate(calc(var(--lr) * .4)) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--lx, 0), var(--ly, -240px)) rotate(var(--lr, 0deg)) scale(.92);
+  }
+}

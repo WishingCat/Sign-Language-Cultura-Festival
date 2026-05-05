@@ -1019,6 +1019,45 @@
     }
   }
 
+  /* ── Hidden easter egg: punch the hero portrait → love burst ─────────── */
+  const LOVE_IMAGES = ["assets/love/1.png", "assets/love/2.png", "assets/love/3.png"];
+  const heroImgPreloaded = LOVE_IMAGES.map(src => { const i = new Image(); i.src = src; return i; });
+  let lovePunchAt = 0;
+  function onHeroPunch(e) {
+    if (!$wallHeroImg) return;
+    // Quick haptic-like recoil on the portrait
+    $wallHeroImg.classList.remove("is-punched");
+    // eslint-disable-next-line no-unused-expressions
+    $wallHeroImg.offsetWidth;
+    $wallHeroImg.classList.add("is-punched");
+
+    // Spawn a random love sticker drifting from the click point
+    const now = Date.now();
+    if (now - lovePunchAt < 80) return; // crude throttle so a fast click doesn't spam DOM
+    lovePunchAt = now;
+    const sticker = document.createElement("img");
+    const src = LOVE_IMAGES[Math.floor(Math.random() * LOVE_IMAGES.length)];
+    sticker.src = src;
+    sticker.alt = "";
+    sticker.className = "love-sticker";
+    // Anchor near the click point but biased outward in random directions
+    const cx = (e && typeof e.clientX === "number") ? e.clientX : window.innerWidth / 2;
+    const cy = (e && typeof e.clientY === "number") ? e.clientY : window.innerHeight / 2;
+    const size = 110 + Math.random() * 110;        // 110–220 px
+    const drift = (Math.random() - 0.5) * 220;     // -110 to +110 px horizontal
+    const lift  = 180 + Math.random() * 220;       // 180–400 px upward
+    const rot   = (Math.random() - 0.5) * 90;      // ±45deg final rotation
+    sticker.style.setProperty("--lx", drift + "px");
+    sticker.style.setProperty("--ly", -lift + "px");
+    sticker.style.setProperty("--lr", rot + "deg");
+    sticker.style.left = (cx - size / 2) + "px";
+    sticker.style.top  = (cy - size / 2) + "px";
+    sticker.style.width = size + "px";
+    sticker.style.height = "auto";
+    document.body.appendChild(sticker);
+    sticker.addEventListener("animationend", () => sticker.remove(), { once: true });
+  }
+
   async function loadOthersStrip() {
     if (!$wallOthers || !$wallOthersList) return;
     $wallOthers.hidden = false;
@@ -1332,6 +1371,7 @@
     if ($boardList) $boardList.addEventListener("click", onFlowerClick);
     if ($boardInput) $boardInput.addEventListener("input", syncBoardCount);
     if ($wallOthersRefresh) $wallOthersRefresh.addEventListener("click", loadOthersStrip);
+    if ($wallHeroImg) $wallHeroImg.addEventListener("click", onHeroPunch);
 
     /* rehydrate seq + dressingId */
     try {
