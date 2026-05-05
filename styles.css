@@ -2580,12 +2580,13 @@ body::after {
 }
 .footbar__repo {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px 5px 10px;
+  gap: 1px;
+  padding: 6px 14px 7px;
   background: var(--cream);
   border: 1.8px solid var(--ink);
-  border-radius: 999px;
+  border-radius: 14px;
   box-shadow: 2px 2px 0 var(--ink);
   text-decoration: none;
   color: var(--ink);
@@ -2601,10 +2602,25 @@ body::after {
   color: var(--cream);
   box-shadow: 3px 3px 0 var(--leaf-deep);
 }
+.footbar__repo-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 .footbar__repo-icon { display: inline-block; vertical-align: -2px; }
+.footbar__repo-author {
+  font-family: var(--hand);
+  font-weight: 400;
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  opacity: .75;
+  margin-top: -1px;
+}
+.footbar__repo:hover .footbar__repo-author { opacity: .92; }
 
 @media (max-width: 720px) {
-  .footbar__repo { font-size: 11px; padding: 4px 10px; }
+  .footbar__repo { font-size: 11px; padding: 5px 12px; }
+  .footbar__repo-author { font-size: 10px; }
 }
 
 /* ───── Board · 送花按钮 ────────────────────────────────────── */
