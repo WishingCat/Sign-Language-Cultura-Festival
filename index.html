@@ -301,7 +301,9 @@
       </section>
 
       <div class="wall__empty" id="wallEmpty" hidden>
-        <p>还没去试衣间挑一身春装呢 ✿</p>
+        <img class="wall__empty-img" src="assets/characters/start.png" alt="手小语" loading="lazy">
+        <p class="wall__empty-title">展示墙还在等你 ✿</p>
+        <p class="wall__empty-sub">先去试衣间挑一身春装，回来这里就能看到自己的造型</p>
         <button class="wall__cta" type="button" data-route="dressing">去试衣间 →</button>
       </div>
       <button class="wall__back" type="button" data-route="dressing">换一身造型 ↻</button>
@@ -327,7 +329,11 @@
         <button class="board__locked-cta" type="button" data-route="home">去首页 →</button>
       </div>
       <ul class="board__list" id="boardList"></ul>
-      <p class="board__empty" id="boardEmpty" hidden>还没有人留言 ✿ 来当第一张小纸条吧</p>
+      <div class="board__empty" id="boardEmpty" hidden>
+        <span class="board__empty-mark" aria-hidden="true">✿</span>
+        <p class="board__empty-title">还没有人留言</p>
+        <p class="board__empty-sub">在上方写一句话，当第一张春日小纸条吧</p>
+      </div>
     </section>
 
     <svg class="page-grass" viewBox="0 0 1440 60" preserveAspectRatio="none" aria-hidden="true">

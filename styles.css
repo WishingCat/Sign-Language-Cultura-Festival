@@ -2501,3 +2501,95 @@ body::after {
   .wall__other { padding: 8px 8px 10px; }
   .wall__other__nick { font-size: 13px; }
 }
+
+/* ───── Wall empty state (richer card) ────────────────────── */
+.wall__empty {
+  max-width: 460px;
+  margin: 0 auto;
+  text-align: center;
+  padding: 32px 24px 36px;
+  background: var(--cream);
+  border: 2.5px dashed var(--leaf-pale);
+  border-radius: 26px;
+  box-shadow: 4px 5px 0 var(--cream-deep);
+}
+.wall__empty-img {
+  width: 130px;
+  height: 130px;
+  object-fit: contain;
+  margin: 0 auto 12px;
+  display: block;
+  filter: drop-shadow(0 8px 0 rgba(42,58,44,.1));
+  animation: charBob 4.5s ease-in-out infinite;
+}
+.wall__empty-title {
+  margin: 0 0 6px;
+  font-family: var(--hand);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--ink);
+  letter-spacing: .04em;
+}
+.wall__empty-sub {
+  margin: 0 0 18px;
+  font-family: var(--hand);
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.7;
+}
+
+/* preview-mode hint on the wall hero */
+.wall__hero.is-preview {
+  background: linear-gradient(180deg, #FFFAE3 0%, var(--cream) 60%);
+  border-color: var(--sun);
+}
+.wall__hero.is-preview::before {
+  content: "预";
+  background: var(--sun);
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.wall__hero.is-preview .wall__hero-label::before {
+  content: "✿ 预览中 · ";
+  color: var(--bloom-deep);
+  font-weight: 700;
+}
+.wall__hero.is-preview .wall__hero-label::first-letter { /* no-op fallback */ }
+
+/* ───── Board empty (richer welcome) ─────────────────────── */
+.board__empty {
+  text-align: center;
+  padding: 36px 18px;
+  border: 2px dashed var(--leaf-pale);
+  border-radius: 22px;
+  background: rgba(255, 249, 236, .6);
+  margin: 12px auto 0;
+  max-width: 440px;
+}
+.board__empty-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bloom);
+  color: var(--cream);
+  font-size: 22px;
+  border: 2.5px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  margin-bottom: 12px;
+  animation: bobble 4.5s ease-in-out infinite;
+}
+.board__empty-title {
+  margin: 0 0 4px;
+  font-family: var(--hand);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--ink);
+}
+.board__empty-sub {
+  margin: 0;
+  font-family: var(--hand);
+  font-size: 14px;
+  color: var(--ink-soft);
+}

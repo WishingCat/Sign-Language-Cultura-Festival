@@ -923,29 +923,46 @@
   function setLastOutfit(t, b, s) { lastSubmittedOutfit = { t, b, s }; }
   function enterWall() {
     if (!$panelWall) return;
-    if (!lastSubmittedOutfit) {
-      // show empty hint, hide list
+    // Always show "others" strip — it's about discovery, not your own state.
+    loadOthersStrip();
+
+    const { top, bottom, shoe } = state;
+    const allSet = top != null && bottom != null && shoe != null;
+    // Three states for the user side of the wall:
+    //   A) didn't pick anything yet → CTA back to dressing
+    //   B) picked all three but hasn't pressed the stroll button → live preview
+    //   C) submitted at least once → show hero + same-outfit roster
+    const submitted = !!lastSubmittedOutfit;
+    if (!submitted && !allSet) {
+      // (A)
       if ($wallEmpty) $wallEmpty.hidden = false;
+      if ($wallHero)  $wallHero.hidden  = true;
       if ($fellowsPanel) $fellowsPanel.hidden = true;
-      if ($wallHero) $wallHero.hidden = true;
-      if ($wallOthers) $wallOthers.hidden = true;
-      if ($wallSub) $wallSub.textContent = "还没有提交造型";
-      // even when user hasn't submitted, still let them browse other people's outfits
-      loadOthersStrip();
+      if ($wallSub)  $wallSub.textContent = "你的春装还没挑齐";
       return;
     }
+    // For (B) and (C) we have a t/b/s to mirror.
+    const tbs = submitted ? lastSubmittedOutfit : { t: top, b: bottom, s: shoe };
     if ($wallEmpty) $wallEmpty.hidden = true;
     if ($fellowsPanel) $fellowsPanel.hidden = false;
-    const { t, b, s } = lastSubmittedOutfit;
-    if ($wallSub) $wallSub.textContent = `你的造型 ${codeOf(t,b,s)}`;
-    renderWallHero(t, b, s);
-    loadFellows(t, b, s);
-    loadOthersStrip();
+    if ($wallSub) {
+      $wallSub.textContent = submitted
+        ? `你的造型 ${codeOf(tbs.t, tbs.b, tbs.s)}`
+        : `预览造型 ${codeOf(tbs.t, tbs.b, tbs.s)} · 还没贴到墙上`;
+    }
+    renderWallHero(tbs.t, tbs.b, tbs.s, !submitted);
+    if (submitted) {
+      loadFellows(tbs.t, tbs.b, tbs.s);
+    } else {
+      // Hide same-outfit roster until they actually submit.
+      if ($fellowsPanel) $fellowsPanel.hidden = true;
+    }
   }
 
-  function renderWallHero(t, b, s) {
+  function renderWallHero(t, b, s, preview) {
     if (!$wallHero) return;
     $wallHero.hidden = false;
+    $wallHero.classList.toggle("is-preview", !!preview);
     if ($wallHeroImg) $wallHeroImg.src = `assets/characters/${t}${b}${s}.png`;
     if ($wallHeroNick) $wallHeroNick.textContent = nickname || "—";
     if ($wallHeroSeq)  $wallHeroSeq.textContent  = userDisplayUid || "";
