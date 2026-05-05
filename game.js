@@ -24,7 +24,7 @@
       { value: 1, src: "assets/signs/shoe-1.jpg",   item: "assets/items/shoe-1.png",   label: "皮鞋" },
       { value: 2, src: "assets/signs/shoe-2.jpg",   item: "assets/items/shoe-2.png",   label: "高跟鞋" },
       { value: 3, src: "assets/signs/shoe-3.jpg",   item: "assets/items/shoe-3.png",   label: "拖鞋" },
-      { value: 4, src: "assets/items/shoe-4.png",   item: "assets/items/shoe-4.png",   label: "靴子" },
+      { value: 4, src: "assets/signs/shoe-4.png",   item: "assets/items/shoe-4.png",   label: "靴子" },
     ],
   };
 
