@@ -211,7 +211,6 @@
   function itemCardHTML(it) {
     return `<div class="stage-item" data-slot-value="${it.value}">
       <img class="stage-item__img" src="${it.item}" alt="${it.label}" loading="lazy" draggable="false">
-      <span class="stage-item__label">${it.label}</span>
     </div>`;
   }
   function syncStageItems() {
